@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/contact_service.dart';
-import '../../services/sms_service.dart';
 import '../../services/sms_gateway_service.dart';
-import '../../models/contact_model.dart';
 import '../contacts_screen.dart';
-import '../sms_compose_screen.dart';
 
 class MemberSmsScreen extends StatefulWidget {
   const MemberSmsScreen({super.key});

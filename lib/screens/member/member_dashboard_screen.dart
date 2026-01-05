@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -291,19 +292,33 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
           if (content.imageUrl != null)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                content.imageUrl!,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 200,
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, size: 64),
-                  );
-                },
-              ),
+              child: content.imageUrl!.startsWith('http')
+                  ? Image.network(
+                      content.imageUrl!,
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, size: 64),
+                        );
+                      },
+                    )
+                  : Image.file(
+                      File(content.imageUrl!),
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, size: 64),
+                        );
+                      },
+                    ),
             ),
           Padding(
             padding: const EdgeInsets.all(16.0),

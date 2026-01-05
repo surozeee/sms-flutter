@@ -77,12 +77,13 @@ class ExcelService {
       var excel = Excel.createExcel();
       excel.delete('Sheet1');
       Sheet? sheetObject = excel['Contacts'];
-      if (sheetObject == null) {
-        sheetObject = excel['Contacts'];
-      }
       
       // Add headers
-      sheetObject.appendRow([const TextCellValue('Name'), const TextCellValue('Phone Number'), const TextCellValue('Carrier')]);
+      sheetObject.appendRow([
+        TextCellValue('Name'),
+        TextCellValue('Phone Number'),
+        TextCellValue('Carrier'),
+      ]);
       
       // Add data
       for (var contact in contacts) {

@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import '../services/image_service.dart';
 import '../services/contact_service.dart';
 import '../models/contact_model.dart';
-import 'contacts_screen.dart';
 
 class ImageShareScreen extends StatefulWidget {
   const ImageShareScreen({super.key});

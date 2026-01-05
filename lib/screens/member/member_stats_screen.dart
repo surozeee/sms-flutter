@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/stats_service.dart';
 
 class MemberStatsScreen extends StatefulWidget {
   const MemberStatsScreen({super.key});
