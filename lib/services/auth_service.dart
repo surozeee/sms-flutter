@@ -86,5 +86,52 @@ class AuthService {
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_usernameKey);
   }
+
+  /// Reset password for a user
+  static Future<bool> resetPassword({
+    required String username,
+    required String newPassword,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Get existing users
+    final usersJson = prefs.getString(_usersKey);
+    if (usersJson == null) {
+      return false;
+    }
+    
+    final users = Map<String, String>.from(json.decode(usersJson));
+    
+    // Check if username exists
+    if (!users.containsKey(username.toLowerCase())) {
+      return false;
+    }
+    
+    // Update password (in production, hash the password)
+    users[username.toLowerCase()] = newPassword;
+    
+    // Save updated users
+    await prefs.setString(_usersKey, json.encode(users));
+    return true;
+  }
+
+  /// Check if username exists
+  static Future<bool> usernameExists(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Check default username
+    if (username.toLowerCase() == defaultUsername.toLowerCase()) {
+      return true;
+    }
+    
+    // Check registered users
+    final usersJson = prefs.getString(_usersKey);
+    if (usersJson != null) {
+      final users = Map<String, String>.from(json.decode(usersJson));
+      return users.containsKey(username.toLowerCase());
+    }
+    
+    return false;
+  }
 }
 

@@ -12,6 +12,7 @@ import 'login_screen.dart';
 import 'home_screen.dart';
 import 'image_share_screen.dart';
 import 'advanced_search_screen.dart';
+import 'sms_menu_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -340,7 +341,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   LanguageService.translate('send_sms', language: _currentLanguage),
                   Icons.message,
                   Colors.green,
-                  _loadContacts,
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SmsMenuScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -615,7 +623,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _selectedIndex = 2;
                 });
                 Navigator.pop(context);
-                _loadContacts();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SmsMenuScreen(),
+                  ),
+                );
               },
             ),
             ListTile(

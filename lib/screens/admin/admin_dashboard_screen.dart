@@ -4,6 +4,7 @@ import '../auth/role_selection_screen.dart';
 import 'member_management_screen.dart';
 import 'content_management_screen.dart';
 import 'push_history_screen.dart';
+import 'admin_sms_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -156,6 +157,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 );
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.message),
+              title: const Text('Send SMS'),
+              selected: _selectedIndex == 4,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminSmsScreen(),
+                  ),
+                );
+              },
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
@@ -274,11 +289,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 },
               ),
               _buildActionCard(
-                'Statistics',
-                Icons.bar_chart,
-                Colors.purple,
+                'Send SMS',
+                Icons.message,
+                Colors.red,
                 () {
-                  // TODO: Navigate to statistics
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminSmsScreen(),
+                    ),
+                  );
                 },
               ),
             ],
