@@ -32,24 +32,22 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 )).toList(),
           )),
     );
-    _updateSelectedCount();
+    _totalSelected = _calculateSelectedCount();
   }
 
-  void _updateSelectedCount() {
+  int _calculateSelectedCount() {
     int count = 0;
     for (var contacts in _groupedContacts.values) {
       count += contacts.where((c) => c.isSelected).length;
     }
-    setState(() {
-      _totalSelected = count;
-    });
+    return count;
   }
 
   void _toggleContactSelection(String carrier, int index) {
     setState(() {
       _groupedContacts[carrier]![index].isSelected =
           !_groupedContacts[carrier]![index].isSelected;
-      _updateSelectedCount();
+      _totalSelected = _calculateSelectedCount();
     });
   }
 
@@ -58,7 +56,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
       for (var contact in _groupedContacts[carrier]!) {
         contact.isSelected = select;
       }
-      _updateSelectedCount();
+      _totalSelected = _calculateSelectedCount();
     });
   }
 

@@ -44,3 +44,64 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Temporary files and folders
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+Thumbs.db
+desktop.ini
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+.temp/
+*.cache
+.cache/
+
+# OS-specific temporary files
+# Windows
+*.lnk
+$RECYCLE.BIN/
+*.stackdump
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+.directory
+.Trash-*
+
+# Editor temporary files
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Build and output files
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.dSYM/
+
+# Log files
+logs/
+*.log.*
+
+# Package files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+

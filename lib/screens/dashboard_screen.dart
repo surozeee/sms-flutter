@@ -5,11 +5,13 @@ import 'package:share_plus/share_plus.dart';
 import '../services/contact_service.dart';
 import '../services/auth_service.dart';
 import '../services/stats_service.dart';
+import '../services/language_service.dart';
 import '../models/contact_model.dart';
 import 'contacts_screen.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'image_share_screen.dart';
+import 'advanced_search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,12 +26,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _todaySentCount = 0;
   bool _isLoading = false;
   bool _hasPermission = false;
+  String _currentLanguage = 'en';
 
   @override
   void initState() {
     super.initState();
     _loadStats();
     _checkPermissions();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final lang = await LanguageService.getCurrentLanguage();
+    setState(() {
+      _currentLanguage = lang;
+    });
   }
 
   Future<void> _loadStats() async {
@@ -197,7 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     builder: (context, snapshot) {
                       final username = snapshot.data ?? 'User';
                       return Text(
-                        'Welcome, $username!',
+                        '${LanguageService.translate('welcome', language: _currentLanguage)}, $username!',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -207,9 +218,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Manage your SMS campaigns efficiently',
-                    style: TextStyle(
+                  Text(
+                    LanguageService.translate('manage_campaigns', language: _currentLanguage),
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Colors.white70,
                     ),
@@ -225,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'SMS Sent',
+                  LanguageService.translate('sms_sent', language: _currentLanguage),
                   _smsSentCount.toString(),
                   Icons.send,
                   Colors.blue,
@@ -234,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Today',
+                  LanguageService.translate('today', language: _currentLanguage),
                   _todaySentCount.toString(),
                   Icons.today,
                   Colors.green,
@@ -244,10 +255,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 24),
 
+          // Advanced Search Card
+          Card(
+            elevation: 2,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdvancedSearchScreen(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.search,
+                        color: Colors.orange,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            LanguageService.translate('advanced_search', language: _currentLanguage),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            LanguageService.translate('search_contacts', language: _currentLanguage),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Quick Actions
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
+          Text(
+            LanguageService.translate('quick_actions', language: _currentLanguage),
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -257,7 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: _buildActionCard(
-                  'Load Contacts',
+                  LanguageService.translate('load_contacts', language: _currentLanguage),
                   Icons.contacts,
                   Colors.blue,
                   _loadContacts,
@@ -266,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildActionCard(
-                  'Send SMS',
+                  LanguageService.translate('send_sms', language: _currentLanguage),
                   Icons.message,
                   Colors.green,
                   _loadContacts,
@@ -279,7 +350,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: _buildActionCard(
-                  'Image Share',
+                  LanguageService.translate('image_share', language: _currentLanguage),
                   Icons.image,
                   Colors.purple,
                   () {
@@ -297,9 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 24),
 
           // Social Media Section
-          const Text(
-            'Share & Connect',
-            style: TextStyle(
+          Text(
+            LanguageService.translate('share_connect', language: _currentLanguage),
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -312,7 +383,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.share, color: Colors.blue),
-                    title: const Text('Share App'),
+                    title: Text(LanguageService.translate('share_app', language: _currentLanguage)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _shareApp,
                   ),
@@ -351,6 +422,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showLanguageDialog() async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(LanguageService.translate('select_language', language: _currentLanguage)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: LanguageService.getAvailableLanguages().map((lang) {
+            return ListTile(
+              title: Text('${lang['name']} (${lang['native']})'),
+              leading: Radio<String>(
+                value: lang['code']!,
+                groupValue: _currentLanguage,
+                onChanged: (value) {
+                  Navigator.pop(context, value);
+                },
+              ),
+              onTap: () {
+                Navigator.pop(context, lang['code']);
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      await LanguageService.setLanguage(selected);
+      setState(() {
+        _currentLanguage = selected;
+      });
+    }
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
@@ -425,8 +530,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(LanguageService.translate('dashboard', language: _currentLanguage)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            tooltip: LanguageService.translate('select_language', language: _currentLanguage),
+            onPressed: _showLanguageDialog,
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -473,7 +585,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
+              title: Text(LanguageService.translate('dashboard', language: _currentLanguage)),
               selected: _selectedIndex == 0,
               onTap: () {
                 setState(() {
@@ -484,7 +596,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.contacts),
-              title: const Text('Contacts'),
+              title: Text(LanguageService.translate('contacts', language: _currentLanguage)),
               selected: _selectedIndex == 1,
               onTap: () {
                 setState(() {
@@ -496,7 +608,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.message),
-              title: const Text('Send SMS'),
+              title: Text(LanguageService.translate('send_sms', language: _currentLanguage)),
               selected: _selectedIndex == 2,
               onTap: () {
                 setState(() {
@@ -508,7 +620,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.bar_chart),
-              title: const Text('Statistics'),
+              title: Text(LanguageService.translate('statistics', language: _currentLanguage)),
               selected: _selectedIndex == 3,
               onTap: () {
                 setState(() {
@@ -519,7 +631,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.image),
-              title: const Text('Image Share'),
+              title: Text(LanguageService.translate('image_share', language: _currentLanguage)),
               selected: _selectedIndex == 4,
               onTap: () {
                 setState(() {
@@ -537,7 +649,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.share),
-              title: const Text('Share App'),
+              title: Text(LanguageService.translate('share_app', language: _currentLanguage)),
               onTap: () {
                 Navigator.pop(context);
                 _shareApp();
@@ -545,7 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
+              title: Text(LanguageService.translate('settings', language: _currentLanguage)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -559,7 +671,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              title: Text(
+                LanguageService.translate('logout', language: _currentLanguage),
+                style: const TextStyle(color: Colors.red),
+              ),
               onTap: _handleLogout,
             ),
           ],
