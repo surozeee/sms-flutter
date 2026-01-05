@@ -82,7 +82,7 @@ class ExcelService {
       }
       
       // Add headers
-      sheetObject.appendRow([const TextCellValue('Name'), const TextCellValue('Phone Number'), const TextCellValue('Carrier')]);
+      sheetObject.appendRow([TextCellValue('Name'), TextCellValue('Phone Number'), TextCellValue('Carrier')]);
       
       // Add data
       for (var contact in contacts) {
