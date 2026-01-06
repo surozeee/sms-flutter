@@ -349,7 +349,7 @@ class _ImageShareScreenState extends State<ImageShareScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: _shareToSocialMedia,
-                      icon: const Icon(Icons.share),
+                      icon: const Icon(Icons.share_outlined),
                       label: const Text('Share to Social Media'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

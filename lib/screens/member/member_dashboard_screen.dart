@@ -359,7 +359,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                     const SizedBox(width: 4),
                     Text('${content.views}', style: TextStyle(color: Colors.grey.shade600)),
                     const SizedBox(width: 16),
-                    Icon(Icons.share, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.share_outlined, size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text('${content.shares}', style: TextStyle(color: Colors.grey.shade600)),
                   ],

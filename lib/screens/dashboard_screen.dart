@@ -390,7 +390,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.share, color: Colors.blue),
+                    leading: const Icon(Icons.share_outlined, color: Colors.blue),
                     title: Text(LanguageService.translate('share_app', language: _currentLanguage)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _shareApp,
@@ -661,7 +661,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.share),
+              leading: const Icon(Icons.share_outlined),
               title: Text(LanguageService.translate('share_app', language: _currentLanguage)),
               onTap: () {
                 Navigator.pop(context);

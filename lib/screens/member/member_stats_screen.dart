@@ -39,7 +39,7 @@ class _MemberStatsScreenState extends State<MemberStatsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            _buildStatCard('Posts Shared', _postsShared.toString(), Icons.share, Colors.blue),
+            _buildStatCard('Posts Shared', _postsShared.toString(), Icons.share_outlined, Colors.blue),
             const SizedBox(height: 16),
             _buildStatCard('Messages Sent', _messagesSent.toString(), Icons.message, Colors.green),
             const SizedBox(height: 16),
