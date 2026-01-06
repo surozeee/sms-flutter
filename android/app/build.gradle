@@ -52,6 +52,26 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.debug
+            // Enable code shrinking and obfuscation for release builds
+            minifyEnabled false
+            shrinkResources false
+        }
+        debug {
+            // Faster debug builds
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    // Enable incremental builds
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Optimize build performance
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt']
         }
     }
 }
