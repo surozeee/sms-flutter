@@ -17,6 +17,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
   Map<String, List<ContactModel>> _groupedContacts = {};
   String? _selectedCarrierFilter;
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isSending = false;
   String _statusMessage = '';
@@ -37,11 +39,28 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
     super.initState();
     _loadLanguage();
     _loadContacts();
+    // Scroll to text field when keyboard opens
+    _messageFocusNode.addListener(() {
+      if (_messageFocusNode.hasFocus) {
+        // Delay to ensure keyboard is fully open
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _messageFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -309,6 +328,7 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('SMS Menu'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -472,32 +492,48 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'SMS Message',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _messageController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Type your message here...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'SMS Message',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
                         ),
-                        onChanged: (value) {
-                          setState(() {});
-                        },
-                      ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _messageController,
+                          focusNode: _messageFocusNode,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: 'Type your message here...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                          onTap: () {
+                            // Scroll to bottom when text field is tapped
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (_scrollController.hasClients) {
+                                _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              }
+                            });
+                          },
+                        ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -551,7 +587,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                           ),
                         ),
                       ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],

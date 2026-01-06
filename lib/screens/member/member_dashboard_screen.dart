@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../services/auth_service_v2.dart';
 import '../../services/content_service.dart';
 import '../../models/content_model.dart';
@@ -64,16 +65,9 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
       switch (platform) {
         case 'facebook':
           await launchUrl(
-            Uri.parse('https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(shareText)}'),
+            Uri.parse('https://www.facebook.com/sharer/sharer.php?quote=${Uri.encodeComponent(shareText)}'),
             mode: LaunchMode.externalApplication,
           );
-          break;
-        case 'instagram':
-          // Instagram doesn't support direct sharing via URL
-          await Share.share(shareText);
-          break;
-        case 'tiktok':
-          await Share.share(shareText);
           break;
         case 'whatsapp':
           await launchUrl(
@@ -86,6 +80,26 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
             Uri.parse('viber://forward?text=${Uri.encodeComponent(shareText)}'),
             mode: LaunchMode.externalApplication,
           );
+          break;
+        case 'linkedin':
+          // LinkedIn share with text
+          await launchUrl(
+            Uri.parse('https://www.linkedin.com/sharing/share-offsite/?mini=true&summary=${Uri.encodeComponent(shareText)}'),
+            mode: LaunchMode.externalApplication,
+          );
+          break;
+        case 'twitter':
+          await launchUrl(
+            Uri.parse('https://twitter.com/intent/tweet?text=${Uri.encodeComponent(shareText)}'),
+            mode: LaunchMode.externalApplication,
+          );
+          break;
+        case 'instagram':
+          // Instagram doesn't support direct sharing via URL
+          await Share.share(shareText);
+          break;
+        case 'tiktok':
+          await Share.share(shareText);
           break;
         default:
           await Share.share(shareText);
@@ -342,14 +356,17 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
                   children: [
-                    _buildShareButton('Facebook', Icons.people, Colors.blue, content),
-                    _buildShareButton('Instagram', Icons.camera_alt, Colors.pink, content),
-                    _buildShareButton('TikTok', Icons.music_note, Colors.black, content),
-                    _buildShareButton('WhatsApp', Icons.chat, Colors.green, content),
-                    _buildShareButton('Viber', Icons.message, Colors.purple, content),
+                    _buildShareButton('Facebook', FontAwesomeIcons.facebook, const Color(0xFF1877F2), content),
+                    _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp, const Color(0xFF25D366), content),
+                    _buildShareButton('Viber', FontAwesomeIcons.viber, const Color(0xFF665CAC), content),
+                    _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin, const Color(0xFF0077B5), content),
+                    _buildShareButton('Twitter', FontAwesomeIcons.xTwitter, const Color(0xFF1DA1F2), content),
+                    _buildShareButton('Instagram', FontAwesomeIcons.instagram, const Color(0xFFE4405F), content),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -359,7 +376,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                     const SizedBox(width: 4),
                     Text('${content.views}', style: TextStyle(color: Colors.grey.shade600)),
                     const SizedBox(width: 16),
-                    Icon(Icons.share_outlined, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.ios_share, size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text('${content.shares}', style: TextStyle(color: Colors.grey.shade600)),
                   ],
@@ -378,11 +395,20 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     Color color,
     ContentModel content,
   ) {
-    return IconButton(
-      icon: Icon(icon),
-      color: color,
-      onPressed: () => _shareContent(content, platform.toLowerCase()),
-      tooltip: platform,
+    return Tooltip(
+      message: platform,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: IconButton(
+          icon: FaIcon(icon, size: 24),
+          color: color,
+          iconSize: 28,
+          onPressed: () => _shareContent(content, platform.toLowerCase()),
+        ),
+      ),
     );
   }
 }

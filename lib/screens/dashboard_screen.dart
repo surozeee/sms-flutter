@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/contact_service.dart';
 import '../services/auth_service.dart';
 import '../services/stats_service.dart';
@@ -397,31 +398,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.people, color: Color(0xFF1877F2)),
+                    leading: const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF1877F2)),
                     title: const Text('Facebook'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => _openSocialMedia('https://www.facebook.com'),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.alternate_email, color: Color(0xFF1DA1F2)),
+                    leading: const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
+                    title: const Text('WhatsApp'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _openSocialMedia('https://wa.me'),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const FaIcon(FontAwesomeIcons.viber, color: Color(0xFF665CAC)),
+                    title: const Text('Viber'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _openSocialMedia('https://www.viber.com'),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const FaIcon(FontAwesomeIcons.linkedin, color: Color(0xFF0077B5)),
+                    title: const Text('LinkedIn'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _openSocialMedia('https://www.linkedin.com'),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const FaIcon(FontAwesomeIcons.xTwitter, color: Color(0xFF1DA1F2)),
                     title: const Text('Twitter/X'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => _openSocialMedia('https://www.twitter.com'),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.camera_alt, color: Color(0xFFE4405F)),
+                    leading: const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFFE4405F)),
                     title: const Text('Instagram'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => _openSocialMedia('https://www.instagram.com'),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.play_circle_filled, color: Color(0xFFFF0000)),
-                    title: const Text('YouTube'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => _openSocialMedia('https://www.youtube.com'),
                   ),
                 ],
               ),

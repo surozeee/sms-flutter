@@ -22,6 +22,8 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
   Map<String, List<ContactModel>> _groupedContacts = {};
   String? _selectedCarrierFilter;
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isSending = false;
   String _statusMessage = '';
@@ -37,16 +39,34 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
     'Unknown': Colors.grey,
   };
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSimContacts();
-  }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _messageFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSimContacts();
+    // Scroll to text field when keyboard opens
+    _messageFocusNode.addListener(() {
+      if (_messageFocusNode.hasFocus) {
+        // Delay to ensure keyboard is fully open
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   Future<void> _loadSimContacts() async {
@@ -416,6 +436,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Admin SMS'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -678,6 +699,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                 ],
               ),
               child: SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -692,6 +714,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _messageController,
+                      focusNode: _messageFocusNode,
                       maxLines: 3,
                       minLines: 1,
                       decoration: InputDecoration(
@@ -705,6 +728,18 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                       ),
                       onChanged: (value) {
                         setState(() {});
+                      },
+                      onTap: () {
+                        // Scroll to bottom when text field is tapped
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (_scrollController.hasClients) {
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        });
                       },
                     ),
                     const SizedBox(height: 8),
