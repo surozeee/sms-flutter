@@ -29,11 +29,11 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
   int _failedCount = 0;
   String? _loadedFileName;
 
-  final List<String> _carriers = ['NTC', 'Ncell', 'Smart', 'Unknown'];
+  final List<String> _carriers = ['NTC', 'Ncell', 'Smart Cell', 'Unknown'];
   final Map<String, Color> _carrierColors = {
     'NTC': Colors.blue,
     'Ncell': Colors.green,
-    'Smart': Colors.orange,
+    'Smart Cell': Colors.orange,
     'Unknown': Colors.grey,
   };
 
@@ -416,6 +416,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // First row: SIM and CSV only
                 Row(
                   children: [
                     Expanded(
@@ -435,7 +436,12 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                         Colors.green,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Second row: Excel
+                Row(
+                  children: [
                     Expanded(
                       child: _buildSourceButton(
                         'Excel File',
@@ -629,97 +635,108 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                       ),
           ),
 
-          // SMS Compose Section
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SMS Message',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          // SMS Compose Section - Made responsive with Flexible
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
                   ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _messageController,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: 'Type your message here...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                  onChanged: (value) {
-                    setState(() {});
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '${_messageController.text.length} characters',
+                    const Text(
+                      'SMS Message',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (_statusMessage.isNotEmpty)
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _messageController,
+                      maxLines: 3,
+                      minLines: 1,
+                      decoration: InputDecoration(
+                        hintText: 'Type your message here...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
                           child: Text(
-                            _statusMessage,
+                            '${_messageController.text.length} characters',
                             style: TextStyle(
-                              color: _sentCount > 0 ? Colors.green : Colors.red,
+                              color: Colors.grey.shade600,
                               fontSize: 12,
                             ),
-                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (_statusMessage.isNotEmpty)
+                          Flexible(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Text(
+                                _statusMessage,
+                                style: TextStyle(
+                                  color: _sentCount > 0 ? Colors.green : Colors.red,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.right,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSending ? null : _sendSms,
+                        icon: _isSending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.send),
+                        label: Text(_isSending
+                            ? 'Sending...'
+                            : 'Send SMS to $_totalSelected'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: const TextStyle(fontSize: 16),
+                        ),
                       ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSending ? null : _sendSms,
-                    icon: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.send),
-                    label: Text(_isSending
-                        ? 'Sending...'
-                        : 'Send SMS to $_totalSelected'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],

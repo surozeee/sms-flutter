@@ -1,8 +1,10 @@
-import 'package:flutter_sms/flutter_sms.dart';
+import 'package:flutter/services.dart';
 import '../models/contact_model.dart';
 import 'stats_service.dart';
 
 class SmsService {
+  static const MethodChannel _channel = MethodChannel('sms_service');
+
   static Future<Map<String, dynamic>> sendBulkSms({
     required List<ContactModel> contacts,
     required String message,
@@ -26,20 +28,28 @@ class SmsService {
     List<String> failedNumbers = [];
 
     try {
-      String result = await sendSMS(
-        message: message,
-        recipients: recipients,
-        sendDirect: true,
-      );
+      // Send SMS to each recipient
+      for (String recipient in recipients) {
+        try {
+          final result = await _channel.invokeMethod('sendSms', {
+            'phoneNumber': recipient,
+            'message': message,
+          });
+          if (result == true || result == 'sent') {
+            sentCount++;
+          } else {
+            failedCount++;
+            failedNumbers.add(recipient);
+          }
+        } catch (e) {
+          failedCount++;
+          failedNumbers.add(recipient);
+        }
+      }
 
-      // Parse result to determine success/failure
-      if (result.contains('sent')) {
-        sentCount = recipients.length;
-        // Update statistics
+      // Update statistics
+      if (sentCount > 0) {
         await StatsService.incrementSmsCount(sentCount);
-      } else {
-        failedCount = recipients.length;
-        failedNumbers = recipients;
       }
     } catch (e) {
       failedCount = recipients.length;
@@ -67,11 +77,10 @@ class SmsService {
     required String message,
   }) async {
     try {
-      await sendSMS(
-        message: message,
-        recipients: [phoneNumber],
-        sendDirect: true,
-      );
+      await _channel.invokeMethod('sendSms', {
+        'phoneNumber': phoneNumber,
+        'message': message,
+      });
     } catch (e) {
       throw Exception('Failed to send SMS: $e');
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../auth/role_selection_screen.dart';
+import '../auth/member_registration_screen.dart';
 import '../../services/auth_service_v2.dart';
 import 'member_dashboard_screen.dart';
 
@@ -14,6 +15,7 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _mpinController = TextEditingController();
+  bool _obscureMpin = true;
   bool _isLoading = false;
 
   @override
@@ -127,11 +129,16 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                     controller: _identifierController,
                     decoration: InputDecoration(
                       labelText: 'Email or Phone',
+                      hintText: 'Enter your email or phone number',
                       prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter email or phone';
@@ -142,16 +149,31 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _mpinController,
-                    obscureText: true,
+                    obscureText: _obscureMpin,
                     decoration: InputDecoration(
                       labelText: 'MPIN',
+                      hintText: 'Enter 4-digit MPIN',
                       prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureMpin ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureMpin = !_obscureMpin;
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
                     keyboardType: TextInputType.number,
                     maxLength: 4,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _handleLogin(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter MPIN';
@@ -167,10 +189,41 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator()
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text('Login', style: TextStyle(fontSize: 18)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don't have an account? ",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MemberRegistrationScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text('Register'),
+                      ),
+                    ],
                   ),
                 ],
               ),
