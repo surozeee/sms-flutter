@@ -80,6 +80,21 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
     try {
       final contacts = await ContactService.getSimContacts();
       
+      if (contacts.isEmpty) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No contacts found. Please ensure you have contacts with phone numbers in your device.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      
       // Select all by default
       for (var contact in contacts) {
         contact.isSelected = true;
@@ -98,7 +113,10 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading contacts: $e')),
+          SnackBar(
+            content: Text('Error loading contacts: $e'),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }

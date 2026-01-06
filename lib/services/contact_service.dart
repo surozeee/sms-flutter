@@ -33,6 +33,8 @@ class ContactService {
   };
 
   static String detectCarrier(String phoneNumber) {
+    if (phoneNumber.isEmpty) return 'Unknown';
+    
     // Remove all non-digit characters
     String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
     
@@ -41,17 +43,24 @@ class ContactService {
       cleaned = cleaned.substring(3);
     }
     
-    // Must be 10 digits for Nepal mobile numbers
-    if (cleaned.length < 10) {
+    // Remove leading zeros
+    cleaned = cleaned.replaceFirst(RegExp(r'^0+'), '');
+    
+    // Must be at least 7 digits for Nepal mobile numbers
+    if (cleaned.length < 7) {
       return 'Unknown';
     }
 
-    // Take first 10 digits if longer
+    // Take first 10 digits if longer (Nepal mobile numbers are 10 digits)
     if (cleaned.length > 10) {
       cleaned = cleaned.substring(0, 10);
     }
 
     // Extract first 3 digits for carrier detection
+    if (cleaned.length < 3) {
+      return 'Unknown';
+    }
+    
     String prefix3 = cleaned.substring(0, 3);
     
     // Check 3-digit prefixes for carrier detection
@@ -77,47 +86,90 @@ class ContactService {
     
     try {
       // Request permission first
-      final permission = await FlutterContacts.requestPermission();
+      final permission = await FlutterContacts.requestPermission(readonly: true);
       if (!permission) {
         throw Exception('Contacts permission denied');
       }
       
-      // Get contacts from device
+      // Get contacts from device (including SIM contacts)
       List<Contact> deviceContacts = await FlutterContacts.getContacts(
         withProperties: true,
       );
       
+      print('Total contacts found: ${deviceContacts.length}');
+      
+      // Use a Set to avoid duplicate phone numbers
+      Set<String> processedNumbers = {};
+      
       for (Contact contact in deviceContacts) {
         if (contact.phones.isNotEmpty) {
+          // Get contact name
+          String contactName = contact.displayName;
+          if (contactName.isEmpty) {
+            List<String> nameParts = [
+              contact.name.first,
+              contact.name.last,
+            ].where((part) => part.isNotEmpty).toList();
+            contactName = nameParts.isNotEmpty 
+                ? nameParts.join(' ').trim()
+                : 'Unknown';
+          }
+          
+          // Process each phone number
           for (Phone phone in contact.phones) {
-            String phoneNumber = phone.number;
-            if (phoneNumber.isNotEmpty) {
-              String carrier = detectCarrier(phoneNumber);
-              String contactName = contact.displayName;
-              if (contactName.isEmpty) {
-                List<String> nameParts = [
-                  contact.name.first,
-                  contact.name.last,
-                ].where((part) => part.isNotEmpty).toList();
-                contactName = nameParts.isNotEmpty 
-                    ? nameParts.join(' ').trim()
-                    : 'Unknown';
-              }
-              
-              contacts.add(ContactModel(
-                name: contactName,
-                phoneNumber: phoneNumber,
-                carrier: carrier,
-              ));
+            String phoneNumber = _normalizePhoneNumber(phone.number);
+            
+            // Skip if empty or already processed
+            if (phoneNumber.isEmpty || processedNumbers.contains(phoneNumber)) {
+              continue;
             }
+            
+            // Validate phone number (should have at least 7 digits)
+            String digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+            if (digitsOnly.length < 7) {
+              continue;
+            }
+            
+            processedNumbers.add(phoneNumber);
+            String carrier = detectCarrier(phoneNumber);
+            
+            contacts.add(ContactModel(
+              name: contactName,
+              phoneNumber: phoneNumber,
+              carrier: carrier,
+            ));
           }
         }
       }
+      
+      print('Processed contacts: ${contacts.length}');
     } catch (e) {
       print('Error reading contacts: $e');
+      rethrow;
     }
     
     return contacts;
+  }
+  
+  // Normalize phone number to standard format
+  static String _normalizePhoneNumber(String phoneNumber) {
+    if (phoneNumber.isEmpty) return '';
+    
+    // Remove all non-digit characters except +
+    String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Handle country code +977
+    if (cleaned.startsWith('+977')) {
+      cleaned = cleaned.substring(4);
+    } else if (cleaned.startsWith('977')) {
+      cleaned = cleaned.substring(3);
+    }
+    
+    // Remove leading zeros
+    cleaned = cleaned.replaceFirst(RegExp(r'^0+'), '');
+    
+    // Return cleaned number
+    return cleaned.trim();
   }
 
   static Map<String, List<ContactModel>> groupByCarrier(List<ContactModel> contacts) {

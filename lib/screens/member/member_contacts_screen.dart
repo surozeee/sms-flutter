@@ -28,6 +28,22 @@ class _MemberContactsScreenState extends State<MemberContactsScreen> {
 
     try {
       final contacts = await ContactService.getSimContacts();
+      
+      if (contacts.isEmpty) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No contacts found. Please ensure you have contacts with phone numbers in your device.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      
       final grouped = ContactService.groupByCarrier(contacts);
       setState(() {
         _contacts = contacts;
@@ -38,6 +54,14 @@ class _MemberContactsScreenState extends State<MemberContactsScreen> {
       setState(() {
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading contacts: $e'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
