@@ -43,10 +43,17 @@ android {
     defaultConfig {
         applicationId "com.example.campaign_connect"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 36
+        targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+    }
+
+    signingConfigs {
+        debug {
+            // Use default debug keystore (automatically created by Android)
+            // No need to specify if using default location
+        }
     }
 
     buildTypes {
@@ -57,9 +64,12 @@ android {
             shrinkResources false
         }
         debug {
+            signingConfig signingConfigs.debug
             // Faster debug builds
             minifyEnabled false
             shrinkResources false
+            // Allow installation of debug APK
+            debuggable true
         }
     }
 
