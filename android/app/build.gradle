@@ -24,8 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.campaign_connect"
-    compileSdk 36
-    ndkVersion flutter.ndkVersion
+    compileSdkVersion 35
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
@@ -42,17 +42,18 @@ android {
 
     defaultConfig {
         applicationId "com.example.campaign_connect"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 21
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         debug {
-            // Use default debug keystore (automatically created by Android)
-            // No need to specify if using default location
+            // Use default debug keystore
+            // This will use the default debug keystore automatically
         }
     }
 
