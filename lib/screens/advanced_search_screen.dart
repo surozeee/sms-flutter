@@ -16,12 +16,14 @@ class AdvancedSearchScreen extends StatefulWidget {
 class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _unifiedSearchController = TextEditingController();
   String? _selectedCarrier;
   String _currentLanguage = 'en';
   List<ContactModel> _allContacts = [];
   List<ContactModel> _filteredContacts = [];
   bool _isLoading = false;
   bool _hasSearched = false;
+  bool _useUnifiedSearch = true; // Toggle between unified and separate search
 
   final List<String> _carriers = ['NTC', 'Ncell', 'Smart', 'Unknown'];
 
@@ -36,6 +38,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _unifiedSearchController.dispose();
     super.dispose();
   }
 
@@ -90,24 +93,37 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   }
 
   void _performSearch() {
+    String unifiedQuery = _unifiedSearchController.text.trim();
     String nameQuery = _nameController.text.toLowerCase().trim();
     String phoneQuery = _phoneController.text.trim();
 
     List<ContactModel> results = _allContacts.where((contact) {
-      // Name filter
-      bool nameMatch =
-          nameQuery.isEmpty || contact.name.toLowerCase().contains(nameQuery);
+      bool matches = true;
 
-      // Phone filter
-      bool phoneMatch =
-          phoneQuery.isEmpty || contact.phoneNumber.contains(phoneQuery);
+      if (_useUnifiedSearch) {
+        // Unified search: search in both name and phone number (OR condition)
+        if (unifiedQuery.isNotEmpty) {
+          String queryLower = unifiedQuery.toLowerCase();
+          bool nameMatch = contact.name.toLowerCase().contains(queryLower);
+          bool phoneMatch = contact.phoneNumber.contains(unifiedQuery);
+          // Match if either name OR phone matches
+          matches = nameMatch || phoneMatch;
+        }
+      } else {
+        // Separate search: both name AND phone must match (if provided)
+        bool nameMatch = nameQuery.isEmpty || 
+            contact.name.toLowerCase().contains(nameQuery);
+        bool phoneMatch = phoneQuery.isEmpty || 
+            contact.phoneNumber.contains(phoneQuery);
+        matches = nameMatch && phoneMatch;
+      }
 
-      // Carrier filter
+      // Carrier filter (applies to both modes)
       bool carrierMatch = _selectedCarrier == null ||
           _selectedCarrier!.isEmpty ||
           contact.carrier == _selectedCarrier;
 
-      return nameMatch && phoneMatch && carrierMatch;
+      return matches && carrierMatch;
     }).toList();
 
     setState(() {
@@ -119,6 +135,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   void _clearFilters() {
     _nameController.clear();
     _phoneController.clear();
+    _unifiedSearchController.clear();
     setState(() {
       _selectedCarrier = null;
       _filteredContacts = [];
@@ -186,42 +203,96 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Name Search
-                          TextField(
-                            controller: _nameController,
-                            decoration: InputDecoration(
-                              labelText: LanguageService.translate(
-                                  'search_by_name',
-                                  language: _currentLanguage),
-                              hintText: LanguageService.translate(
-                                  'enter_search_term',
-                                  language: _currentLanguage),
-                              prefixIcon: const Icon(Icons.person),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          // Search Mode Toggle
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Text('Unified Search'),
+                                  selected: _useUnifiedSearch,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      _useUnifiedSearch = selected;
+                                      if (selected) {
+                                        _nameController.clear();
+                                        _phoneController.clear();
+                                      } else {
+                                        _unifiedSearchController.clear();
+                                      }
+                                    });
+                                    _performSearch();
+                                  },
+                                ),
                               ),
-                            ),
-                            onChanged: (_) => _performSearch(),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Text('Separate Search'),
+                                  selected: !_useUnifiedSearch,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      _useUnifiedSearch = false;
+                                      if (selected) {
+                                        _unifiedSearchController.clear();
+                                      }
+                                    });
+                                    _performSearch();
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
-                          // Phone Search
-                          TextField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              labelText: LanguageService.translate(
-                                  'search_by_phone',
-                                  language: _currentLanguage),
-                              hintText: LanguageService.translate(
-                                  'enter_search_term',
-                                  language: _currentLanguage),
-                              prefixIcon: const Icon(Icons.phone),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          // Unified Search Field (searches both name and number)
+                          if (_useUnifiedSearch)
+                            TextField(
+                              controller: _unifiedSearchController,
+                              decoration: InputDecoration(
+                                labelText: 'Search by Name or Phone Number',
+                                hintText: 'Enter name or phone number...',
+                                prefixIcon: const Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
+                              onChanged: (_) => _performSearch(),
+                            )
+                          else ...[
+                            // Name Search
+                            TextField(
+                              controller: _nameController,
+                              decoration: InputDecoration(
+                                labelText: LanguageService.translate(
+                                    'search_by_name',
+                                    language: _currentLanguage),
+                                hintText: LanguageService.translate(
+                                    'enter_search_term',
+                                    language: _currentLanguage),
+                                prefixIcon: const Icon(Icons.person),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onChanged: (_) => _performSearch(),
                             ),
-                            onChanged: (_) => _performSearch(),
-                          ),
+                            const SizedBox(height: 16),
+                            // Phone/SIM Number Search
+                            TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              decoration: InputDecoration(
+                                labelText: 'Search by SIM/Phone Number',
+                                hintText: LanguageService.translate(
+                                    'enter_search_term',
+                                    language: _currentLanguage),
+                                prefixIcon: const Icon(Icons.sim_card),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onChanged: (_) => _performSearch(),
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           // Carrier Filter
                           DropdownButtonFormField<String>(
