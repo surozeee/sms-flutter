@@ -133,11 +133,14 @@ class ContactService {
             processedNumbers.add(phoneNumber);
             String carrier = detectCarrier(phoneNumber);
             
-            contacts.add(ContactModel(
-              name: contactName,
-              phoneNumber: phoneNumber,
-              carrier: carrier,
-            ));
+            // Filter: Only include NTC and Ncell carriers
+            if (carrier == 'NTC' || carrier == 'Ncell') {
+              contacts.add(ContactModel(
+                name: contactName,
+                phoneNumber: phoneNumber,
+                carrier: carrier,
+              ));
+            }
           }
         }
       }
@@ -158,15 +161,28 @@ class ContactService {
     // Remove all non-digit characters except +
     String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
     
-    // Handle country code +977
-    if (cleaned.startsWith('+977')) {
-      cleaned = cleaned.substring(4);
-    } else if (cleaned.startsWith('977')) {
-      cleaned = cleaned.substring(3);
+    // If number starts with +, take the last 10 digits
+    if (cleaned.startsWith('+')) {
+      // Remove the + sign
+      cleaned = cleaned.substring(1);
+      // Take last 10 digits
+      if (cleaned.length >= 10) {
+        cleaned = cleaned.substring(cleaned.length - 10);
+      }
+    } else {
+      // Handle country code 977 (without +)
+      if (cleaned.startsWith('977')) {
+        cleaned = cleaned.substring(3);
+      }
+      
+      // Remove leading zeros
+      cleaned = cleaned.replaceFirst(RegExp(r'^0+'), '');
+      
+      // Take last 10 digits if longer
+      if (cleaned.length > 10) {
+        cleaned = cleaned.substring(cleaned.length - 10);
+      }
     }
-    
-    // Remove leading zeros
-    cleaned = cleaned.replaceFirst(RegExp(r'^0+'), '');
     
     // Return cleaned number
     return cleaned.trim();

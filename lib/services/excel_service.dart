@@ -51,16 +51,21 @@ class ExcelService {
             phone = row[1]!.value?.toString() ?? '';
           }
           
-          // Clean phone number
-          phone = phone.replaceAll(RegExp(r'[^\d]'), '');
+          // Normalize phone number using the same logic as ContactService
+          phone = _normalizePhoneNumber(phone);
           
-          if (name.isNotEmpty && phone.isNotEmpty && phone.length >= 10) {
+          // Validate phone number (should be at least 7 digits for Nepal)
+          if (name.isNotEmpty && phone.isNotEmpty && phone.length >= 7) {
             String carrier = ContactService.detectCarrier(phone);
-            contacts.add(ContactModel(
-              name: name,
-              phoneNumber: phone,
-              carrier: carrier,
-            ));
+            
+            // Filter: Only include NTC and Ncell carriers
+            if (carrier == 'NTC' || carrier == 'Ncell') {
+              contacts.add(ContactModel(
+                name: name,
+                phoneNumber: phone,
+                carrier: carrier,
+              ));
+            }
           }
         }
       }
@@ -69,6 +74,40 @@ class ExcelService {
     }
     
     return contacts;
+  }
+
+  /// Normalize phone number to standard format (same logic as ContactService)
+  static String _normalizePhoneNumber(String phoneNumber) {
+    if (phoneNumber.isEmpty) return '';
+    
+    // Remove all non-digit characters except +
+    String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // If number starts with +, take the last 10 digits
+    if (cleaned.startsWith('+')) {
+      // Remove the + sign
+      cleaned = cleaned.substring(1);
+      // Take last 10 digits
+      if (cleaned.length >= 10) {
+        cleaned = cleaned.substring(cleaned.length - 10);
+      }
+    } else {
+      // Handle country code 977 (without +)
+      if (cleaned.startsWith('977')) {
+        cleaned = cleaned.substring(3);
+      }
+      
+      // Remove leading zeros
+      cleaned = cleaned.replaceFirst(RegExp(r'^0+'), '');
+      
+      // Take last 10 digits if longer
+      if (cleaned.length > 10) {
+        cleaned = cleaned.substring(cleaned.length - 10);
+      }
+    }
+    
+    // Return cleaned number
+    return cleaned.trim();
   }
 
   /// Export contacts to Excel
