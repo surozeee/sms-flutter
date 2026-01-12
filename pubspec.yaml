@@ -1,7 +1,7 @@
 name: campaign_connect
 description: CampaignConnect - Political Campaigning App
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -27,7 +27,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/main_logo.png" # Fallback/iOS icon
+  min_sdk_android: 28 # Android 9 (Pie) minimum support
+
+  # Adaptive Icon Config (Crucial for Android 12+)
+  adaptive_icon_background: "#FFFFFF" # Your background color
+  adaptive_icon_foreground: "assets/icon/main_logo.png" # Your logo only

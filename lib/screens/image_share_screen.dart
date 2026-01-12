@@ -617,7 +617,7 @@ class _ImageSendScreenState extends State<ImageSendScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      '${contacts.length} contacts (${selectedCount} selected)',
+                      '${contacts.length} contacts ($selectedCount selected)',
                     ),
                     trailing: Checkbox(
                       value: allSelected,

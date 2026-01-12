@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import '../models/contact_model.dart';
-import '../services/language_service.dart';
 import '../services/contact_service.dart';
+import '../services/language_service.dart';
 import 'contacts_screen.dart';
 
 class AdvancedSearchScreen extends StatefulWidget {
@@ -94,12 +95,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
 
     List<ContactModel> results = _allContacts.where((contact) {
       // Name filter
-      bool nameMatch = nameQuery.isEmpty ||
-          contact.name.toLowerCase().contains(nameQuery);
+      bool nameMatch =
+          nameQuery.isEmpty || contact.name.toLowerCase().contains(nameQuery);
 
       // Phone filter
-      bool phoneMatch = phoneQuery.isEmpty ||
-          contact.phoneNumber.contains(phoneQuery);
+      bool phoneMatch =
+          phoneQuery.isEmpty || contact.phoneNumber.contains(phoneQuery);
 
       // Carrier filter
       bool carrierMatch = _selectedCarrier == null ||
@@ -129,7 +130,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     if (_filteredContacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(LanguageService.translate('no_results', language: _currentLanguage)),
+          content: Text(LanguageService.translate('no_results',
+              language: _currentLanguage)),
         ),
       );
       return;
@@ -150,7 +152,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(LanguageService.translate('advanced_search', language: _currentLanguage)),
+        title: Text(LanguageService.translate('advanced_search',
+            language: _currentLanguage)),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -175,7 +178,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            LanguageService.translate('search_contacts', language: _currentLanguage),
+                            LanguageService.translate('search_contacts',
+                                language: _currentLanguage),
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -186,8 +190,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                           TextField(
                             controller: _nameController,
                             decoration: InputDecoration(
-                              labelText: LanguageService.translate('search_by_name', language: _currentLanguage),
-                              hintText: LanguageService.translate('enter_search_term', language: _currentLanguage),
+                              labelText: LanguageService.translate(
+                                  'search_by_name',
+                                  language: _currentLanguage),
+                              hintText: LanguageService.translate(
+                                  'enter_search_term',
+                                  language: _currentLanguage),
                               prefixIcon: const Icon(Icons.person),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -199,11 +207,15 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                           // Phone Search
                           TextField(
                             controller: _phoneController,
+                            keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
-                              labelText: LanguageService.translate('search_by_phone', language: _currentLanguage),
-                              hintText: LanguageService.translate('enter_search_term', language: _currentLanguage),
+                              labelText: LanguageService.translate(
+                                  'search_by_phone',
+                                  language: _currentLanguage),
+                              hintText: LanguageService.translate(
+                                  'enter_search_term',
+                                  language: _currentLanguage),
                               prefixIcon: const Icon(Icons.phone),
-                              keyboardType: TextInputType.phone,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -213,9 +225,11 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                           const SizedBox(height: 16),
                           // Carrier Filter
                           DropdownButtonFormField<String>(
-                            value: _selectedCarrier,
+                            initialValue: _selectedCarrier,
                             decoration: InputDecoration(
-                              labelText: LanguageService.translate('filter_by_carrier', language: _currentLanguage),
+                              labelText: LanguageService.translate(
+                                  'filter_by_carrier',
+                                  language: _currentLanguage),
                               prefixIcon: const Icon(Icons.sim_card),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -224,12 +238,17 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                             items: [
                               DropdownMenuItem<String>(
                                 value: null,
-                                child: Text(LanguageService.translate('all_carriers', language: _currentLanguage)),
+                                child: Text(LanguageService.translate(
+                                    'all_carriers',
+                                    language: _currentLanguage)),
                               ),
-                              ..._carriers.map((carrier) => DropdownMenuItem<String>(
-                                    value: carrier,
-                                    child: Text(LanguageService.translate(carrier.toLowerCase(), language: _currentLanguage)),
-                                  )),
+                              ..._carriers
+                                  .map((carrier) => DropdownMenuItem<String>(
+                                        value: carrier,
+                                        child: Text(LanguageService.translate(
+                                            carrier.toLowerCase(),
+                                            language: _currentLanguage)),
+                                      )),
                             ],
                             onChanged: (value) {
                               setState(() {
@@ -246,7 +265,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: _clearFilters,
                                   icon: const Icon(Icons.clear),
-                                  label: Text(LanguageService.translate('clear_filters', language: _currentLanguage)),
+                                  label: Text(LanguageService.translate(
+                                      'clear_filters',
+                                      language: _currentLanguage)),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -254,7 +275,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                                 child: ElevatedButton.icon(
                                   onPressed: _performSearch,
                                   icon: const Icon(Icons.search),
-                                  label: Text(LanguageService.translate('search', language: _currentLanguage)),
+                                  label: Text(LanguageService.translate(
+                                      'search',
+                                      language: _currentLanguage)),
                                 ),
                               ),
                             ],
@@ -279,7 +302,10 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                                 Text(
                                   LanguageService.translateWithParams(
                                     'results_count',
-                                    {'count': _filteredContacts.length.toString()},
+                                    {
+                                      'count':
+                                          _filteredContacts.length.toString()
+                                    },
                                     language: _currentLanguage,
                                   ),
                                   style: const TextStyle(
@@ -291,7 +317,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                                   ElevatedButton.icon(
                                     onPressed: _viewResults,
                                     icon: const Icon(Icons.visibility),
-                                    label: Text(LanguageService.translate('view_results', language: _currentLanguage)),
+                                    label: Text(LanguageService.translate(
+                                        'view_results',
+                                        language: _currentLanguage)),
                                   ),
                               ],
                             ),
@@ -309,7 +337,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        LanguageService.translate('no_results', language: _currentLanguage),
+                                        LanguageService.translate('no_results',
+                                            language: _currentLanguage),
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey.shade600,
@@ -323,22 +352,28 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                               ListView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _filteredContacts.length > 10 ? 10 : _filteredContacts.length,
+                                itemCount: _filteredContacts.length > 10
+                                    ? 10
+                                    : _filteredContacts.length,
                                 itemBuilder: (context, index) {
                                   final contact = _filteredContacts[index];
                                   return ListTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: _getCarrierColor(contact.carrier),
+                                      backgroundColor:
+                                          _getCarrierColor(contact.carrier),
                                       child: Text(
                                         contact.name[0].toUpperCase(),
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                            color: Colors.white),
                                       ),
                                     ),
                                     title: Text(contact.name),
                                     subtitle: Text(contact.phoneNumber),
                                     trailing: Chip(
                                       label: Text(contact.carrier),
-                                      backgroundColor: _getCarrierColor(contact.carrier).withOpacity(0.2),
+                                      backgroundColor:
+                                          _getCarrierColor(contact.carrier)
+                                              .withOpacity(0.2),
                                     ),
                                   );
                                 },
@@ -383,7 +418,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(LanguageService.translate('select_language', language: _currentLanguage)),
+        title: Text(LanguageService.translate('select_language',
+            language: _currentLanguage)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: LanguageService.getAvailableLanguages().map((lang) {
@@ -413,4 +449,3 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     }
   }
 }
-

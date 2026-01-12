@@ -39,7 +39,6 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
     'Unknown': Colors.grey,
   };
 
-
   @override
   void dispose() {
     _messageController.dispose();
@@ -47,7 +46,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   @override
   void initState() {
     super.initState();
@@ -86,8 +85,8 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Contacts permission is required'),
+            const SnackBar(
+              content: Text('Contacts permission is required'),
               action: SnackBarAction(
                 label: 'Open Settings',
                 onPressed: openAppSettings,
@@ -101,7 +100,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
 
     try {
       final contacts = await ContactService.getSimContacts();
-      
+
       if (contacts.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -109,27 +108,28 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No contacts found. Please ensure you have contacts with phone numbers in your device.'),
+              content: Text(
+                  'No contacts found. Please ensure you have contacts with phone numbers in your device.'),
               duration: Duration(seconds: 4),
             ),
           );
         }
         return;
       }
-      
+
       // Select all by default
       for (var contact in contacts) {
         contact.isSelected = true;
       }
 
       final grouped = ContactService.groupByCarrier(contacts);
-      
+
       setState(() {
         _contacts = contacts;
         _groupedContacts = grouped;
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -166,14 +166,14 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
       });
 
       final contacts = await CsvService.readContactsFromCsv(file);
-      
+
       // Select all by default
       for (var contact in contacts) {
         contact.isSelected = true;
       }
 
       final grouped = ContactService.groupByCarrier(contacts);
-      
+
       setState(() {
         _contacts = contacts;
         _groupedContacts = grouped;
@@ -215,14 +215,14 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
       });
 
       final contacts = await ExcelService.readContactsFromExcel(file);
-      
+
       // Select all by default
       for (var contact in contacts) {
         contact.isSelected = true;
       }
 
       final grouped = ContactService.groupByCarrier(contacts);
-      
+
       setState(() {
         _contacts = contacts;
         _groupedContacts = grouped;
@@ -300,21 +300,21 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
 
   String _formatPhoneNumber(String phoneNumber) {
     String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     if (cleaned.startsWith('977')) {
       cleaned = cleaned.substring(3);
     }
-    
+
     if (cleaned.length == 10) {
       return '${cleaned.substring(0, 4)} ${cleaned.substring(4, 7)} ${cleaned.substring(7)}';
     }
-    
+
     return phoneNumber;
   }
 
   Future<void> _sendSms() async {
     final selected = _selectedContacts;
-    
+
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -537,7 +537,8 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                     spacing: 8,
                     children: [
                       _buildCarrierChip('All', null),
-                      ..._carriers.map((carrier) => _buildCarrierChip(carrier, carrier)),
+                      ..._carriers.map(
+                          (carrier) => _buildCarrierChip(carrier, carrier)),
                     ],
                   ),
                 ],
@@ -627,7 +628,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                                 ),
                               ),
                               subtitle: Text(
-                                '${contacts.length} contacts (${selectedCount} selected)',
+                                '${contacts.length} contacts ($selectedCount selected)',
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -672,7 +673,8 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                                       trailing: Chip(
                                         label: Text(contact.carrier),
                                         backgroundColor:
-                                            _carrierColors[carrier]!.withOpacity(0.2),
+                                            _carrierColors[carrier]!
+                                                .withOpacity(0.2),
                                       ),
                                     );
                                   },
@@ -763,7 +765,9 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                               child: Text(
                                 _statusMessage,
                                 style: TextStyle(
-                                  color: _sentCount > 0 ? Colors.green : Colors.red,
+                                  color: _sentCount > 0
+                                      ? Colors.green
+                                      : Colors.red,
                                   fontSize: 12,
                                 ),
                                 textAlign: TextAlign.right,
@@ -847,14 +851,11 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
       onSelected: (selected) {
         _filterByCarrier(selected ? carrier : null);
       },
-      backgroundColor: carrier != null
-          ? _carrierColors[carrier]!.withOpacity(0.1)
-          : null,
-      selectedColor: carrier != null
-          ? _carrierColors[carrier]!.withOpacity(0.3)
-          : null,
+      backgroundColor:
+          carrier != null ? _carrierColors[carrier]!.withOpacity(0.1) : null,
+      selectedColor:
+          carrier != null ? _carrierColors[carrier]!.withOpacity(0.3) : null,
       checkmarkColor: carrier != null ? _carrierColors[carrier] : null,
     );
   }
 }
-

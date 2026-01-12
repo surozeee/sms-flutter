@@ -79,8 +79,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
       if (!status.isGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Contacts permission is required'),
+            const SnackBar(
+              content: Text('Contacts permission is required'),
               action: SnackBarAction(
                 label: 'Open Settings',
                 onPressed: openAppSettings,
@@ -98,7 +98,7 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
 
     try {
       final contacts = await ContactService.getSimContacts();
-      
+
       if (contacts.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -106,21 +106,22 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No contacts found. Please ensure you have contacts with phone numbers in your device.'),
+              content: Text(
+                  'No contacts found. Please ensure you have contacts with phone numbers in your device.'),
               duration: Duration(seconds: 4),
             ),
           );
         }
         return;
       }
-      
+
       // Select all by default
       for (var contact in contacts) {
         contact.isSelected = true;
       }
 
       final grouped = ContactService.groupByCarrier(contacts);
-      
+
       setState(() {
         _allContacts = contacts;
         _groupedContacts = grouped;
@@ -190,23 +191,23 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
   String _formatPhoneNumber(String phoneNumber) {
     // Remove all non-digit characters
     String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     // Remove country code if present (977)
     if (cleaned.startsWith('977')) {
       cleaned = cleaned.substring(3);
     }
-    
+
     // Format Nepal number: 98XX XXX XXX
     if (cleaned.length == 10) {
       return '${cleaned.substring(0, 4)} ${cleaned.substring(4, 7)} ${cleaned.substring(7)}';
     }
-    
+
     return phoneNumber;
   }
 
   Future<void> _sendSms() async {
     final selected = _selectedContacts;
-    
+
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -363,7 +364,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                         spacing: 8,
                         children: [
                           _buildCarrierChip('All', null),
-                          ..._carriers.map((carrier) => _buildCarrierChip(carrier, carrier)),
+                          ..._carriers.map(
+                              (carrier) => _buildCarrierChip(carrier, carrier)),
                         ],
                       ),
                     ],
@@ -422,7 +424,7 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            '${contacts.length} contacts (${selectedCount} selected)',
+                            '${contacts.length} contacts ($selectedCount selected)',
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -466,8 +468,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                                   ),
                                   trailing: Chip(
                                     label: Text(contact.carrier),
-                                    backgroundColor:
-                                        _carrierColors[carrier]!.withOpacity(0.2),
+                                    backgroundColor: _carrierColors[carrier]!
+                                        .withOpacity(0.2),
                                   ),
                                 );
                               },
@@ -523,7 +525,8 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                           },
                           onTap: () {
                             // Scroll to bottom when text field is tapped
-                            Future.delayed(const Duration(milliseconds: 300), () {
+                            Future.delayed(const Duration(milliseconds: 300),
+                                () {
                               if (_scrollController.hasClients) {
                                 _scrollController.animateTo(
                                   _scrollController.position.maxScrollExtent,
@@ -534,59 +537,59 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
                             });
                           },
                         ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${_messageController.text.length} characters',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (_statusMessage.isNotEmpty)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 16.0),
-                                child: Text(
-                                  _statusMessage,
-                                  style: TextStyle(
-                                    color: _sentCount > 0
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${_messageController.text.length} characters',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isSending ? null : _sendSms,
-                          icon: _isSending
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                            if (_statusMessage.isNotEmpty)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 16.0),
+                                  child: Text(
+                                    _statusMessage,
+                                    style: TextStyle(
+                                      color: _sentCount > 0
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.right,
                                   ),
-                                )
-                              : const Icon(Icons.send),
-                          label: Text(_isSending
-                              ? 'Sending...'
-                              : 'Send SMS to $_totalSelected'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            textStyle: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _isSending ? null : _sendSms,
+                            icon: _isSending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.send),
+                            label: Text(_isSending
+                                ? 'Sending...'
+                                : 'Send SMS to $_totalSelected'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(fontSize: 16),
+                            ),
                           ),
                         ),
-                      ),
                       ],
                     ),
                   ),
@@ -604,14 +607,11 @@ class _SmsMenuScreenState extends State<SmsMenuScreen> {
       onSelected: (selected) {
         _filterByCarrier(selected ? carrier : null);
       },
-      backgroundColor: carrier != null
-          ? _carrierColors[carrier]!.withOpacity(0.1)
-          : null,
-      selectedColor: carrier != null
-          ? _carrierColors[carrier]!.withOpacity(0.3)
-          : null,
+      backgroundColor:
+          carrier != null ? _carrierColors[carrier]!.withOpacity(0.1) : null,
+      selectedColor:
+          carrier != null ? _carrierColors[carrier]!.withOpacity(0.3) : null,
       checkmarkColor: carrier != null ? _carrierColors[carrier] : null,
     );
   }
 }
-

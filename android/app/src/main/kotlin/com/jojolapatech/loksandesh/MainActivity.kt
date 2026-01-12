@@ -1,4 +1,4 @@
-package com.example.campaign_connect
+package com.jojolapatech.loksandesh
 
 import android.Manifest
 import android.content.pm.PackageManager

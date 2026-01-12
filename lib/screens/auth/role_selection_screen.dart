@@ -27,7 +27,7 @@ class RoleSelectionScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.how_to_vote,
                     size: 100,
                     color: Colors.white,

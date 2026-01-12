@@ -108,7 +108,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DropdownButtonFormField<String>(
-                value: _contentType,
+                initialValue: _contentType,
                 decoration: const InputDecoration(
                   labelText: 'Content Type',
                   border: OutlineInputBorder(),

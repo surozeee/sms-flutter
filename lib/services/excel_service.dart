@@ -44,7 +44,7 @@ class ExcelService {
           String phone = '';
           
           // Try to extract name and phone from columns
-          if (row.length > 0 && row[0] != null) {
+          if (row.isNotEmpty && row[0] != null) {
             name = row[0]!.value?.toString() ?? '';
           }
           if (row.length > 1 && row[1] != null) {

@@ -11,6 +11,11 @@ if (localPropertiesFile.exists()) {
         localProperties.load(reader)
     }
 }
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
@@ -23,8 +28,8 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.campaign_connect"
-    compileSdkVersion 35
+    namespace "com.jojolapatech.loksandesh"
+    compileSdk 36  // Required by plugins - backward compatible, doesn't affect device compatibility
     ndkVersion "27.0.12077973"
 
     compileOptions {
@@ -41,9 +46,9 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.campaign_connect"
-        minSdkVersion 21
-        targetSdkVersion 34
+        applicationId "com.jojolapatech.loksandesh"
+        minSdkVersion 28  // Android 9 (Pie) - minimum supported version
+        targetSdkVersion 35  // Required by Google Play (latest requirement) - app still runs on Android 9+
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -54,6 +59,12 @@ android {
         debug {
             // Use default debug keystore
             // This will use the default debug keystore automatically
+        }
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
         }
     }
 
@@ -73,6 +84,15 @@ android {
             debuggable true
         }
     }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true // Recommended for 2026 (Code shrinking/R8)
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
 
     // Enable incremental builds
     buildFeatures {

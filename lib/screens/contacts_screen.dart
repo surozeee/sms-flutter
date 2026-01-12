@@ -167,7 +167,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      '${contacts.length} contacts (${selectedCount} selected)',
+                      '${contacts.length} contacts ($selectedCount selected)',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -182,8 +182,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             );
                           },
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.arrow_drop_down),
+                        const IconButton(
+                          icon: Icon(Icons.arrow_drop_down),
                           onPressed: null,
                         ),
                       ],
