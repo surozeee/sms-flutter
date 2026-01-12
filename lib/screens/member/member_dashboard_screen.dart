@@ -356,18 +356,24 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _buildShareButton('Facebook', FontAwesomeIcons.facebook, const Color(0xFF1877F2), content),
-                    _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp, const Color(0xFF25D366), content),
-                    _buildShareButton('Viber', FontAwesomeIcons.viber, const Color(0xFF665CAC), content),
-                    _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin, const Color(0xFF0077B5), content),
-                    _buildShareButton('Twitter', FontAwesomeIcons.xTwitter, const Color(0xFF1DA1F2), content),
-                    _buildShareButton('Instagram', FontAwesomeIcons.instagram, const Color(0xFFE4405F), content),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildShareButton('Facebook', FontAwesomeIcons.facebook, const Color(0xFF1877F2), content),
+                      const SizedBox(width: 8),
+                      _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp, const Color(0xFF25D366), content),
+                      const SizedBox(width: 8),
+                      _buildShareButton('Viber', FontAwesomeIcons.viber, const Color(0xFF665CAC), content),
+                      const SizedBox(width: 8),
+                      _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin, const Color(0xFF0077B5), content),
+                      const SizedBox(width: 8),
+                      _buildShareButton('Twitter', FontAwesomeIcons.xTwitter, const Color(0xFF1DA1F2), content),
+                      const SizedBox(width: 8),
+                      _buildShareButton('Instagram', FontAwesomeIcons.instagram, const Color(0xFFE4405F), content),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -403,9 +409,14 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: IconButton(
-          icon: FaIcon(icon, size: 24),
+          icon: FaIcon(icon, size: 20),
           color: color,
-          iconSize: 28,
+          iconSize: 24,
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: 40,
+          ),
           onPressed: () => _shareContent(content, platform.toLowerCase()),
         ),
       ),
