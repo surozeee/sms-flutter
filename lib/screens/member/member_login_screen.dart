@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../auth/role_selection_screen.dart';
-import '../auth/member_registration_screen.dart';
+
 import '../../services/auth_service_v2.dart';
+import '../auth/role_selection_screen.dart';
 import 'member_dashboard_screen.dart';
 
 class MemberLoginScreen extends StatefulWidget {
@@ -156,7 +156,9 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureMpin ? Icons.visibility : Icons.visibility_off,
+                          _obscureMpin
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () {
                           setState(() {
@@ -205,26 +207,26 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                         : const Text('Login', style: TextStyle(fontSize: 18)),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don't have an account? ",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MemberRegistrationScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text('Register'),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     const Text(
+                  //       "Don't have an account? ",
+                  //       style: TextStyle(color: Colors.grey),
+                  //     ),
+                  //     TextButton(
+                  //       onPressed: () {
+                  //         Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //             builder: (context) => const MemberRegistrationScreen(),
+                  //           ),
+                  //         );
+                  //       },
+                  //       child: const Text('Register'),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
@@ -234,4 +236,3 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
     );
   }
 }
-

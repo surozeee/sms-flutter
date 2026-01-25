@@ -1,0 +1,18 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'register_response.freezed.dart';
+part 'register_response.g.dart';
+
+@freezed
+class RegisterResponse with _$RegisterResponse {
+  const factory RegisterResponse({
+    bool? success,
+    String? message,
+    Map<String, dynamic>? data,
+    String? userId,
+    String? email,
+  }) = _RegisterResponse;
+
+  factory RegisterResponse.fromJson(Map<String, dynamic> json) =>
+      _$RegisterResponseFromJson(json);
+}

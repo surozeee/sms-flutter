@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../admin/admin_login_screen.dart';
 import '../member/member_login_screen.dart';
-import 'member_registration_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -68,7 +68,8 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       child: const Text(
                         'Admin Login',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -90,31 +91,34 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       child: const Text(
                         'Member Login',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MemberRegistrationScreen(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        'New Member? Register Here',
-                        style: TextStyle(fontSize: 16, color: Colors.white70),
-                      ),
-                    ),
-                  ),
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: TextButton(
+                  //     onPressed: () {
+                  //       Navigator.push(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //           builder: (context) => const MemberRegistrationScreen(),
+                  //         ),
+                  //       );
+                  //     },
+                  //     style: TextButton.styleFrom(
+                  //       padding: const EdgeInsets.symmetric(vertical: 16),
+                  //     ),
+                  //     child: const Text(
+                  //       'New Member? Register Here',
+                  //       style: TextStyle(fontSize: 16, color: Colors.white70),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -124,4 +128,3 @@ class RoleSelectionScreen extends StatelessWidget {
     );
   }
 }
-

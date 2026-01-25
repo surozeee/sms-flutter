@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/auth/role_selection_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/member/member_dashboard_screen.dart';
 import 'services/auth_service_v2.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/models/register_request.dart';
 import '../../services/auth_service_v2.dart';
 import '../member/member_dashboard_screen.dart';
 import 'role_selection_screen.dart';
 
-class MemberRegistrationScreen extends StatefulWidget {
+class MemberRegistrationScreen extends ConsumerStatefulWidget {
   const MemberRegistrationScreen({super.key});
 
   @override
-  State<MemberRegistrationScreen> createState() => _MemberRegistrationScreenState();
+  ConsumerState<MemberRegistrationScreen> createState() => _MemberRegistrationScreenState();
 }
 
-class _MemberRegistrationScreenState extends State<MemberRegistrationScreen> {
+class _MemberRegistrationScreenState extends ConsumerState<MemberRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -49,14 +52,20 @@ class _MemberRegistrationScreenState extends State<MemberRegistrationScreen> {
         // Clean phone number (remove non-digits)
         final cleanedPhone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
         
-        final success = await AuthServiceV2.addMember(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          phone: cleanedPhone,
-          mpin: _mpinController.text,
+        // Create registration request
+        final registerRequest = RegisterRequest(
+          emailAddress: _emailController.text.trim(),
+          mobileNumber: cleanedPhone,
+          password: _mpinController.text,
+          role: 'member',
+          fullName: _nameController.text.trim(),
         );
 
-        if (success && mounted) {
+        // Call registration API using Riverpod
+        final registerNotifier = ref.read(registerProvider.notifier);
+        final response = await registerNotifier.register(registerRequest);
+
+        if (mounted) {
           // Auto login after successful registration
           final result = await AuthServiceV2.login(
             identifier: _emailController.text.trim(),
@@ -66,8 +75,8 @@ class _MemberRegistrationScreenState extends State<MemberRegistrationScreen> {
 
           if (result['success'] == true && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Registration successful!'),
+              SnackBar(
+                content: Text(response.message ?? 'Registration successful!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -82,7 +91,7 @@ class _MemberRegistrationScreenState extends State<MemberRegistrationScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Email or phone number already registered'),
+                content: Text('Registration failed. Please try again.'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -92,7 +101,7 @@ class _MemberRegistrationScreenState extends State<MemberRegistrationScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Registration error: $e'),
+              content: Text('Registration error: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
