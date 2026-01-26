@@ -24,9 +24,16 @@ class ApiEndpoints {
   static const String userProfile = '/user/profile';
   static const String updateProfile = '/user/profile';
   static const String changePassword = '/user/change-password';
-  
+
   // Mobile endpoints
   static const String mobileProfile = '/mobile/profile';
+  static const String membersList = '/mobile/members/list';
+  static const String memberRegister = '/mobile/members/register';
+  static const String bulkRegister = '/mobile/members/bulk-register-csv';
+
+  // Party/Booth endpoints
+  static const String boothList = '/party/booth/list-pageable';
+  static String deleteMember(String memberId) => '/party/member/$memberId';
 
   // SMS endpoints
   static const String sendSms = '/sms/send';

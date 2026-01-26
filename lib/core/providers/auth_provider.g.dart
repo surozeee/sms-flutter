@@ -149,7 +149,7 @@ final userBalanceProvider = AutoDisposeFutureProvider<double>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserBalanceRef = AutoDisposeFutureProviderRef<double>;
-String _$logoutHash() => r'5294a30df50bfaf73d9bbd9468a923fd9821325c';
+String _$logoutHash() => r'0bbcc3a48a6f21a56fa1f43516b3a72a1154d678';
 
 /// Provider for logout functionality
 ///
@@ -165,7 +165,7 @@ final logoutProvider = AutoDisposeAsyncNotifierProvider<Logout, void>.internal(
 );
 
 typedef _$Logout = AutoDisposeAsyncNotifier<void>;
-String _$registerHash() => r'1c1d9d40d79dc89ed39f57c0e9f7a461ce27268b';
+String _$registerHash() => r'e65211df080eee9922013f4a352ef8f16054f680';
 
 /// See also [Register].
 @ProviderFor(Register)
@@ -196,7 +196,7 @@ final loginProvider =
 
 typedef _$Login = AutoDisposeAsyncNotifier<LoginResponse?>;
 String _$userProfileProviderHash() =>
-    r'5877af140718d5bb087e605a99ab418fcea52567';
+    r'8658917e53bf3c84bb4b700cd17b67b4936a6929';
 
 /// Provider to fetch and cache user profile
 ///
@@ -214,5 +214,91 @@ final userProfileProviderProvider = AutoDisposeAsyncNotifierProvider<
 );
 
 typedef _$UserProfileProvider = AutoDisposeAsyncNotifier<UserProfile?>;
+String _$boothListHash() => r'ee81bf26ee8f15f9673b123bc7e1f25c7083495b';
+
+/// Provider to fetch booth list
+///
+/// Copied from [BoothList].
+@ProviderFor(BoothList)
+final boothListProvider =
+    AutoDisposeAsyncNotifierProvider<BoothList, BoothListResponse?>.internal(
+  BoothList.new,
+  name: r'boothListProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$boothListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$BoothList = AutoDisposeAsyncNotifier<BoothListResponse?>;
+String _$memberRegisterHash() => r'd6ff29d465e2a366ae118db7c33c0b17f75e0991';
+
+/// Provider to register a new member
+///
+/// Copied from [MemberRegister].
+@ProviderFor(MemberRegister)
+final memberRegisterProvider = AutoDisposeAsyncNotifierProvider<MemberRegister,
+    MemberRegisterResponse?>.internal(
+  MemberRegister.new,
+  name: r'memberRegisterProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$memberRegisterHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$MemberRegister = AutoDisposeAsyncNotifier<MemberRegisterResponse?>;
+String _$memberDeleteHash() => r'a84407dec4cfcac154c1a50b555e2083f77932d7';
+
+/// Provider to delete a member
+///
+/// Copied from [MemberDelete].
+@ProviderFor(MemberDelete)
+final memberDeleteProvider = AutoDisposeAsyncNotifierProvider<MemberDelete,
+    MemberDeleteResponse?>.internal(
+  MemberDelete.new,
+  name: r'memberDeleteProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$memberDeleteHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$MemberDelete = AutoDisposeAsyncNotifier<MemberDeleteResponse?>;
+String _$bulkRegisterHash() => r'dc1b4c69f4eecb60cfc61b649b569fc792f486d1';
+
+/// Provider to bulk register members from Excel file
+///
+/// Copied from [BulkRegister].
+@ProviderFor(BulkRegister)
+final bulkRegisterProvider = AutoDisposeAsyncNotifierProvider<BulkRegister,
+    BulkRegisterResponse?>.internal(
+  BulkRegister.new,
+  name: r'bulkRegisterProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$bulkRegisterHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$BulkRegister = AutoDisposeAsyncNotifier<BulkRegisterResponse?>;
+String _$membersListHash() => r'5ae06cd2bfb5f962e0f0bd9f02b83445cce54349';
+
+/// Provider to fetch members list
+///
+/// Copied from [MembersList].
+@ProviderFor(MembersList)
+final membersListProvider = AutoDisposeAsyncNotifierProvider<MembersList,
+    MembersListResponse?>.internal(
+  MembersList.new,
+  name: r'membersListProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$membersListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$MembersList = AutoDisposeAsyncNotifier<MembersListResponse?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

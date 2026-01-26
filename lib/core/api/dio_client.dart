@@ -401,6 +401,7 @@ class DioClient {
     Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    bool requiresAuth = true,
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
   }) async {
@@ -410,14 +411,23 @@ class DioClient {
         fileKey: await MultipartFile.fromFile(filePath),
       });
 
+      // Merge options with requiresAuth flag
+      final mergedOptions = options?.copyWith(
+            extra: {
+              ...?options.extra,
+              'requiresAuth': requiresAuth,
+            },
+          ) ??
+          Options(
+            contentType: 'multipart/form-data',
+            extra: {'requiresAuth': requiresAuth},
+          );
+
       final response = await _dio.post(
         path,
         data: formData,
         queryParameters: queryParameters,
-        options: options ??
-            Options(
-              contentType: 'multipart/form-data',
-            ),
+        options: mergedOptions,
         cancelToken: cancelToken,
         onSendProgress: onSendProgress,
       );

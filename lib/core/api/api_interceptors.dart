@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../api/api_endpoints.dart';
 import '../services/auth_cache_service.dart';
+import '../../screens/auth/role_selection_screen.dart';
+import '../../main.dart';
 
 /// API Interceptors
 /// Handles authentication, logging, and error handling for API requests
@@ -92,47 +95,55 @@ class ApiInterceptors extends Interceptor {
       print('└─────────────────────────────────────────────────────────');
     }
 
-    // Handle 401 Unauthorized - Token expired
-    // Only attempt token refresh if the request required authentication
-    final requiresAuth = err.requestOptions.extra['requiresAuth'] as bool? ?? true;
-    if (err.response?.statusCode == 401 && requiresAuth) {
-      try {
-        // Attempt to refresh token
-        final refreshed = await _refreshAuthToken();
-        if (refreshed) {
-          // Retry the original request with new token
-          final opts = err.requestOptions;
-          opts.headers['Authorization'] = 'Bearer $_authToken';
+    // Handle 401 Unauthorized - Token expired or invalid
+    if (err.response?.statusCode == 401) {
+      final requiresAuth = err.requestOptions.extra['requiresAuth'] as bool? ?? true;
+      
+      // Only attempt token refresh if the request required authentication
+      if (requiresAuth) {
+        try {
+          // Attempt to refresh token
+          final refreshed = await _refreshAuthToken();
+          if (refreshed) {
+            // Retry the original request with new token
+            final opts = err.requestOptions;
+            opts.headers['Authorization'] = 'Bearer $_authToken';
 
-          final dio = Dio();
-          dio.interceptors.add(ApiInterceptors()
-            ..setAuthToken(_authToken)
-            ..setRefreshToken(_refreshToken));
+            final dio = Dio();
+            dio.interceptors.add(ApiInterceptors()
+              ..setAuthToken(_authToken)
+              ..setRefreshToken(_refreshToken));
 
-          try {
-            final response = await dio.request(
-              opts.path,
-              options: Options(
-                method: opts.method,
-                headers: opts.headers,
-                extra: opts.extra,
-              ),
-              data: opts.data,
-              queryParameters: opts.queryParameters,
-            );
-            return handler.resolve(response);
-          } catch (e) {
-            // If retry fails, clear tokens and return error
-            clearTokens();
+            try {
+              final response = await dio.request(
+                opts.path,
+                options: Options(
+                  method: opts.method,
+                  headers: opts.headers,
+                  extra: opts.extra,
+                ),
+                data: opts.data,
+                queryParameters: opts.queryParameters,
+              );
+              return handler.resolve(response);
+            } catch (e) {
+              // If retry fails, clear tokens and redirect to login
+              await _handleUnauthorized();
+              return handler.reject(err);
+            }
+          } else {
+            // Refresh failed, clear tokens and redirect to login
+            await _handleUnauthorized();
             return handler.reject(err);
           }
-        } else {
-          // Refresh failed, clear tokens
-          clearTokens();
+        } catch (e) {
+          // On any error, clear tokens and redirect to login
+          await _handleUnauthorized();
           return handler.reject(err);
         }
-      } catch (e) {
-        clearTokens();
+      } else {
+        // 401 on non-auth request - still clear tokens and redirect
+        await _handleUnauthorized();
         return handler.reject(err);
       }
     }
@@ -192,8 +203,67 @@ class ApiInterceptors extends Interceptor {
     }
   }
 
+  /// Handle unauthorized access (401) - Clear tokens and redirect to login
+  Future<void> _handleUnauthorized() async {
+    // Clear tokens
+    clearTokens();
+    
+    // Clear cached login data
+    await AuthCacheService.clearLoginData();
+    
+    // Navigate to RoleSelectionScreen using global navigator key
+    if (navigatorKey.currentContext != null) {
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const RoleSelectionScreen(),
+        ),
+        (route) => false, // Remove all previous routes
+      );
+    }
+  }
+
   /// Get user-friendly error message
+  /// Prioritizes API response messages over system messages
   String _getErrorMessage(DioException err) {
+    // First, try to extract error message from API response data
+    if (err.response?.data != null) {
+      final responseData = err.response!.data;
+      
+      // Handle different response data formats
+      String? apiMessage;
+      if (responseData is Map<String, dynamic>) {
+        // Try common error message fields
+        apiMessage = responseData['message'] as String? ??
+            responseData['error'] as String? ??
+            responseData['errorMessage'] as String? ??
+            responseData['msg'] as String?;
+        
+        // If message is a list, join it
+        if (apiMessage == null && responseData['message'] is List) {
+          final messages = responseData['message'] as List;
+          if (messages.isNotEmpty) {
+            apiMessage = messages.map((e) => e.toString()).join(', ');
+          }
+        }
+        
+        // Check for nested error objects
+        if (apiMessage == null && responseData['error'] is Map) {
+          final errorObj = responseData['error'] as Map;
+          apiMessage = errorObj['message'] as String? ??
+              errorObj['error'] as String?;
+        }
+      } else if (responseData is String) {
+        // If response is a plain string, use it
+        apiMessage = responseData;
+      }
+      
+      // If we found an API message, return it
+      if (apiMessage != null && apiMessage.isNotEmpty) {
+        return apiMessage;
+      }
+    }
+    
+    // Fallback to system messages only if no API message found
     switch (err.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -213,9 +283,7 @@ class ApiInterceptors extends Interceptor {
         } else if (statusCode == 500) {
           return 'Server error. Please try again later.';
         } else {
-          return err.response?.data['message'] ??
-              err.response?.data['error'] ??
-              'An error occurred. Status code: $statusCode';
+          return 'An error occurred. Status code: $statusCode';
         }
 
       case DioExceptionType.cancel:
