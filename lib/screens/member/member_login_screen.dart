@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../services/auth_service_v2.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/models/login_request.dart';
 import '../auth/role_selection_screen.dart';
 import 'member_dashboard_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 
-class MemberLoginScreen extends StatefulWidget {
+class MemberLoginScreen extends ConsumerStatefulWidget {
   const MemberLoginScreen({super.key});
 
   @override
-  State<MemberLoginScreen> createState() => _MemberLoginScreenState();
+  ConsumerState<MemberLoginScreen> createState() => _MemberLoginScreenState();
 }
 
-class _MemberLoginScreenState extends State<MemberLoginScreen> {
+class _MemberLoginScreenState extends ConsumerState<MemberLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _mpinController = TextEditingController();
@@ -32,25 +35,45 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
       });
 
       try {
-        final result = await AuthServiceV2.login(
-          identifier: _identifierController.text.trim(),
+        // Create login request
+        final loginRequest = LoginRequest(
+          username: _identifierController.text.trim(),
           password: _mpinController.text,
-          role: 'member',
         );
 
-        if (result['success'] == true && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MemberDashboardScreen(),
+        // Call login API using Riverpod
+        final loginNotifier = ref.read(loginProvider.notifier);
+        final response = await loginNotifier.login(loginRequest);
+
+        // Show snackbar with message from response
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Login completed'),
+              backgroundColor: response.success == true
+                  ? Colors.green
+                  : Colors.red,
             ),
           );
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Invalid email/phone or MPIN'),
-                backgroundColor: Colors.red,
+        }
+
+        // Navigate based on success and userType
+        if (response.success == true && mounted) {
+          final userType = response.data?.userType;
+          
+          if (userType == 'MEMBER') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MemberDashboardScreen(),
+              ),
+            );
+          } else {
+            // For any other userType (ADMIN, etc.), go to AdminDashboardScreen
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminDashboardScreen(),
               ),
             );
           }
@@ -59,7 +82,7 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'),
+              content: Text('Error: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -117,7 +140,7 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Enter email/phone and MPIN',
+                    'Enter username and password',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -128,8 +151,8 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                   TextFormField(
                     controller: _identifierController,
                     decoration: InputDecoration(
-                      labelText: 'Email or Phone',
-                      hintText: 'Enter your email or phone number',
+                      labelText: 'Username',
+                      hintText: 'Enter your username',
                       prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -137,11 +160,11 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
-                    keyboardType: TextInputType.emailAddress,
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter email or phone';
+                        return 'Please enter username';
                       }
                       return null;
                     },
@@ -151,8 +174,8 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                     controller: _mpinController,
                     obscureText: _obscureMpin,
                     decoration: InputDecoration(
-                      labelText: 'MPIN',
-                      hintText: 'Enter 4-digit MPIN',
+                      labelText: 'Password',
+                      hintText: 'Enter your password',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -172,16 +195,12 @@ class _MemberLoginScreenState extends State<MemberLoginScreen> {
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleLogin(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter MPIN';
-                      }
-                      if (value.length != 4) {
-                        return 'MPIN must be 4 digits';
+                        return 'Please enter password';
                       }
                       return null;
                     },

@@ -19,6 +19,7 @@ class ApiEndpoints {
   static const String resetPassword = '/auth/reset-password';
 
   // User endpoints
+  static const String userLogin = '/user/login';
   static const String userRegister = '/user/register';
   static const String userProfile = '/user/profile';
   static const String updateProfile = '/user/profile';

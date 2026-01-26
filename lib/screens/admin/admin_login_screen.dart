@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/role_selection_screen.dart';
-import '../../services/auth_service_v2.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/models/login_request.dart';
 import 'admin_dashboard_screen.dart';
+import '../member/member_dashboard_screen.dart';
 
-class AdminLoginScreen extends StatefulWidget {
+class AdminLoginScreen extends ConsumerStatefulWidget {
   const AdminLoginScreen({super.key});
 
   @override
-  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
+  ConsumerState<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> {
+class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -31,25 +34,45 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       });
 
       try {
-        final result = await AuthServiceV2.login(
-          identifier: _emailController.text.trim(),
+        // Create login request
+        final loginRequest = LoginRequest(
+          username: _usernameController.text.trim(),
           password: _passwordController.text,
-          role: 'admin',
         );
 
-        if (result['success'] == true && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
+        // Call login API using Riverpod
+        final loginNotifier = ref.read(loginProvider.notifier);
+        final response = await loginNotifier.login(loginRequest);
+
+        // Show snackbar with message from response
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Login completed'),
+              backgroundColor: response.success == true
+                  ? Colors.green
+                  : Colors.red,
             ),
           );
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Invalid credentials'),
-                backgroundColor: Colors.red,
+        }
+
+        // Navigate based on success and userType
+        if (response.success == true && mounted) {
+          final userType = response.data?.userType;
+          
+          if (userType == 'MEMBER') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MemberDashboardScreen(),
+              ),
+            );
+          } else {
+            // For any other userType (ADMIN, etc.), go to AdminDashboardScreen
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminDashboardScreen(),
               ),
             );
           }
@@ -58,7 +81,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'),
+              content: Text('Error: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -116,21 +139,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   ),
                   const SizedBox(height: 48),
                   TextFormField(
-                    controller: _emailController,
+                    controller: _usernameController,
                     decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
+                      labelText: 'Username',
+                      hintText: 'Enter your username',
+                      prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
-                    keyboardType: TextInputType.emailAddress,
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter email';
+                        return 'Please enter username';
                       }
                       return null;
                     },
@@ -141,6 +165,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
+                      hintText: 'Enter your password',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -158,6 +183,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleLogin(),
                     validator: (value) {
