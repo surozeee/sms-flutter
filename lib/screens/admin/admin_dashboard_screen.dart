@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service_v2.dart';
-import '../auth/role_selection_screen.dart';
-import 'member_management_screen.dart';
-import 'content_management_screen.dart';
-import 'push_history_screen.dart';
-import 'admin_sms_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminDashboardScreen extends StatefulWidget {
+import '../../core/providers/auth_provider.dart';
+import '../auth/role_selection_screen.dart';
+import 'admin_sms_screen.dart';
+import 'content_management_screen.dart';
+import 'member_management_screen.dart';
+import 'push_history_screen.dart';
+
+class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   int _selectedIndex = 0;
 
   Future<void> _handleLogout() async {
@@ -36,13 +39,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
 
     if (confirm == true) {
-      await AuthServiceV2.logout();
+      // Use the logout provider to clear cached login data
+      await ref.read(logoutProvider.notifier).logout();
+
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (context) => const RoleSelectionScreen(),
           ),
+          (route) => false, // Remove all previous routes
         );
       }
     }
@@ -50,6 +56,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch profile provider to automatically fetch if not cached
+    // This will load from cache first, then fetch from API if needed
+    ref.watch(userProfileProviderProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
@@ -66,43 +76,145 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Icon(
-                    Icons.admin_panel_settings,
-                    size: 48,
-                    color: Colors.white,
+            // Drawer Header with Profile Info
+            Consumer(
+              builder: (context, ref, child) {
+                final profileAsync = ref.watch(userProfileProviderProvider);
+
+                return DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Admin Panel',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  FutureBuilder(
-                    future: AuthServiceV2.getCurrentUser(),
-                    builder: (context, snapshot) {
-                      final email = snapshot.data?.email ?? 'Admin';
-                      return Text(
-                        email,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(
+                        Icons.admin_panel_settings,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      profileAsync.when(
+                        data: (profile) {
+                          // Get display name with fallback: fullName -> emailAddress -> mobileNumber -> 'Admin'
+                          final displayName = profile?.fullName?.isNotEmpty ==
+                                  true
+                              ? profile!.fullName!
+                              : (profile?.emailAddress?.isNotEmpty == true
+                                  ? profile!.emailAddress!
+                                  : (profile?.mobileNumber?.isNotEmpty == true
+                                      ? profile!.mobileNumber!
+                                      : 'Admin'));
+                          final roleName = (profile?.roleName ?? 'ADMIN')
+                              .replaceAll('_', ' ');
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                roleName,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => const Text(
+                          'Loading...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
                         ),
-                      );
-                    },
+                        error: (_, __) => const Text(
+                          'Admin',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
+            ),
+            // Balance Section
+            Consumer(
+              builder: (context, ref, child) {
+                final balanceAsync = ref.watch(userBalanceProvider);
+
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Balance',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      balanceAsync.when(
+                        data: (balance) => Text(
+                          'Rs. ${balance.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        ),
+                        loading: () => const CircularProgressIndicator(),
+                        error: (_, __) => Text(
+                          'Rs. 0.00',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.dashboard),
@@ -207,16 +319,49 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FutureBuilder(
-                    future: AuthServiceV2.getCurrentUser(),
-                    builder: (context, snapshot) {
-                      final name = snapshot.data?.name ?? 'Admin';
-                      return Text(
-                        'Welcome, $name!',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final profileAsync =
+                          ref.watch(userProfileProviderProvider);
+
+                      return profileAsync.when(
+                        data: (profile) {
+                          // Get display name with fallback: fullName -> emailAddress -> mobileNumber -> 'Admin'
+                          final displayName = profile?.fullName?.isNotEmpty ==
+                                  true
+                              ? profile!.fullName!
+                              : (profile?.emailAddress?.isNotEmpty == true
+                                  ? profile!.emailAddress!
+                                  : (profile?.mobileNumber?.isNotEmpty == true
+                                      ? profile!.mobileNumber!
+                                      : 'Admin'));
+                          final roleName = (profile?.roleName ?? 'ADMIN')
+                              .replaceAll('_', ' ');
+
+                          return Text(
+                            'Welcome, $displayName ($roleName) !',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                        loading: () => const Text(
+                          'Welcome, Admin!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        error: (_, __) => const Text(
+                          'Welcome, Admin!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       );
                     },
@@ -341,4 +486,3 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 }
-

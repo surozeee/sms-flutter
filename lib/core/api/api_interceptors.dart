@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../api/api_endpoints.dart';
+import '../services/auth_cache_service.dart';
 
 /// API Interceptors
 /// Handles authentication, logging, and error handling for API requests
@@ -165,8 +166,21 @@ class ApiInterceptors extends Interceptor {
       if (response.statusCode == 200 && response.data != null) {
         // Update tokens from response
         // Adjust these keys based on your API response structure
-        _authToken = response.data['access_token'] ?? response.data['token'];
-        _refreshToken = response.data['refresh_token'] ?? _refreshToken;
+        final newAccessToken = response.data['access_token'] ?? response.data['token'];
+        final newRefreshToken = response.data['refresh_token'] ?? _refreshToken;
+        
+        if (newAccessToken != null) {
+          _authToken = newAccessToken;
+          // Update cache
+          await AuthCacheService.updateAccessToken(newAccessToken);
+        }
+        
+        if (newRefreshToken != null && newRefreshToken != _refreshToken) {
+          _refreshToken = newRefreshToken;
+          // Update cache
+          await AuthCacheService.updateRefreshToken(newRefreshToken);
+        }
+        
         return true;
       }
       return false;

@@ -24,6 +24,9 @@ class ApiEndpoints {
   static const String userProfile = '/user/profile';
   static const String updateProfile = '/user/profile';
   static const String changePassword = '/user/change-password';
+  
+  // Mobile endpoints
+  static const String mobileProfile = '/mobile/profile';
 
   // SMS endpoints
   static const String sendSms = '/sms/send';

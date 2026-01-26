@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/auth/role_selection_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/member/member_dashboard_screen.dart';
-import 'services/auth_service_v2.dart';
+import 'core/providers/auth_provider.dart';
 
 void main() {
   runApp(
@@ -30,63 +30,77 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
+  ConsumerState<AuthWrapper> createState() => _AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthStatus();
-  }
-
-  Future<void> _checkAuthStatus() async {
-    final loggedIn = await AuthServiceV2.isLoggedIn();
-    if (loggedIn) {
-      final user = await AuthServiceV2.getCurrentUser();
-      if (mounted) {
-        if (user?.role == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MemberDashboardScreen(),
-            ),
-          );
-        }
-        return;
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
+class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
+    // Check if user is logged in using cached data
+    final isLoggedInAsync = ref.watch(isLoggedInProvider);
+    final userTypeAsync = ref.watch(userTypeProvider);
+
+    return isLoggedInAsync.when(
+      data: (isLoggedIn) {
+        if (isLoggedIn) {
+          // User is logged in, check user type and navigate accordingly
+          return userTypeAsync.when(
+            data: (userType) {
+              if (userType == 'MEMBER') {
+                // Navigate to member dashboard
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MemberDashboardScreen(),
+                      ),
+                    );
+                  }
+                });
+              } else {
+                // Navigate to admin dashboard for any other user type
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminDashboardScreen(),
+                      ),
+                    );
+                  }
+                });
+              }
+              // Show loading while navigating
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            },
+            loading: () => const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (_, __) => const RoleSelectionScreen(),
+          );
+        } else {
+          // User is not logged in, show role selection screen
+          return const RoleSelectionScreen();
+        }
+      },
+      loading: () => const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
-      );
-    }
-
-    return const RoleSelectionScreen();
+      ),
+      error: (_, __) => const RoleSelectionScreen(),
+    );
   }
 }
 

@@ -1,24 +1,28 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../services/auth_service_v2.dart';
-import '../../services/content_service.dart';
+
+import '../../core/providers/auth_provider.dart';
 import '../../models/content_model.dart';
+import '../../services/content_service.dart';
 import '../auth/role_selection_screen.dart';
 import 'member_contacts_screen.dart';
 import 'member_sms_screen.dart';
 import 'member_stats_screen.dart';
 
-class MemberDashboardScreen extends StatefulWidget {
+class MemberDashboardScreen extends ConsumerStatefulWidget {
   const MemberDashboardScreen({super.key});
 
   @override
-  State<MemberDashboardScreen> createState() => _MemberDashboardScreenState();
+  ConsumerState<MemberDashboardScreen> createState() =>
+      _MemberDashboardScreenState();
 }
 
-class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
+class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
   List<ContentModel> _contents = [];
   bool _isLoading = true;
 
@@ -55,7 +59,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
   Future<void> _shareContent(ContentModel content, String platform) async {
     // Increment share count
     await ContentService.incrementShares(content.id);
-    
+
     String shareText = content.title;
     if (content.text != null) {
       shareText += '\n\n${content.text}';
@@ -65,7 +69,8 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
       switch (platform) {
         case 'facebook':
           await launchUrl(
-            Uri.parse('https://www.facebook.com/sharer/sharer.php?quote=${Uri.encodeComponent(shareText)}'),
+            Uri.parse(
+                'https://www.facebook.com/sharer/sharer.php?quote=${Uri.encodeComponent(shareText)}'),
             mode: LaunchMode.externalApplication,
           );
           break;
@@ -84,13 +89,15 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
         case 'linkedin':
           // LinkedIn share with text
           await launchUrl(
-            Uri.parse('https://www.linkedin.com/sharing/share-offsite/?mini=true&summary=${Uri.encodeComponent(shareText)}'),
+            Uri.parse(
+                'https://www.linkedin.com/sharing/share-offsite/?mini=true&summary=${Uri.encodeComponent(shareText)}'),
             mode: LaunchMode.externalApplication,
           );
           break;
         case 'twitter':
           await launchUrl(
-            Uri.parse('https://twitter.com/intent/tweet?text=${Uri.encodeComponent(shareText)}'),
+            Uri.parse(
+                'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(shareText)}'),
             mode: LaunchMode.externalApplication,
           );
           break;
@@ -104,7 +111,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
         default:
           await Share.share(shareText);
       }
-      
+
       // Reload contents to update share count
       _loadContents();
     } catch (e) {
@@ -136,13 +143,16 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     );
 
     if (confirm == true) {
-      await AuthServiceV2.logout();
+      // Use the logout provider to clear cached login data
+      await ref.read(logoutProvider.notifier).logout();
+
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (context) => const RoleSelectionScreen(),
           ),
+          (route) => false, // Remove all previous routes
         );
       }
     }
@@ -150,6 +160,10 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch profile provider to automatically fetch if not cached
+    // This will load from cache first, then fetch from API if needed
+    ref.watch(userProfileProviderProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('CampaignConnect'),
@@ -166,44 +180,143 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Icon(
-                    Icons.people,
-                    size: 48,
-                    color: Colors.white,
+            // Drawer Header with Profile Info
+            Consumer(
+              builder: (context, ref, child) {
+                final profileAsync = ref.watch(userProfileProviderProvider);
+                
+                return DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Member',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  FutureBuilder(
-                    future: AuthServiceV2.getCurrentUser(),
-                    builder: (context, snapshot) {
-                      final name = snapshot.data?.name ?? 'Member';
-                      return Text(
-                        name,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(
+                        Icons.people,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      profileAsync.when(
+                        data: (profile) {
+                          // Get display name with fallback: fullName -> emailAddress -> mobileNumber -> 'Member'
+                          final displayName = profile?.fullName?.isNotEmpty == true
+                              ? profile!.fullName!
+                              : (profile?.emailAddress?.isNotEmpty == true
+                                  ? profile!.emailAddress!
+                                  : (profile?.mobileNumber?.isNotEmpty == true
+                                      ? profile!.mobileNumber!
+                                      : 'Member'));
+                          final roleName = (profile?.roleName ?? 'MEMBER').replaceAll('_', ' ');
+                          
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                roleName,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => const Text(
+                          'Loading...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
                         ),
-                      );
-                    },
+                        error: (_, __) => const Text(
+                          'Member',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
+            // Balance Section
+            Consumer(
+              builder: (context, ref, child) {
+                final balanceAsync = ref.watch(userBalanceProvider);
+                
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Balance',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      balanceAsync.when(
+                        data: (balance) => Text(
+                          'Rs. ${balance.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        loading: () => const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        error: (_, __) => Text(
+                          'Rs. 0.00',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: const Text('Dashboard'),
@@ -305,7 +418,8 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
         children: [
           if (content.imageUrl != null)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               child: content.imageUrl!.startsWith('http')
                   ? Image.network(
                       content.imageUrl!,
@@ -361,24 +475,34 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildShareButton('Facebook', FontAwesomeIcons.facebook, const Color(0xFF1877F2), content),
-                    _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp, const Color(0xFF25D366), content),
-                    _buildShareButton('Viber', FontAwesomeIcons.viber, const Color(0xFF665CAC), content),
-                    _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin, const Color(0xFF0077B5), content),
-                    _buildShareButton('Twitter', FontAwesomeIcons.xTwitter, const Color(0xFF1DA1F2), content),
-                    _buildShareButton('Instagram', FontAwesomeIcons.instagram, const Color(0xFFE4405F), content),
+                    _buildShareButton('Facebook', FontAwesomeIcons.facebook,
+                        const Color(0xFF1877F2), content),
+                    _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp,
+                        const Color(0xFF25D366), content),
+                    _buildShareButton('Viber', FontAwesomeIcons.viber,
+                        const Color(0xFF665CAC), content),
+                    _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin,
+                        const Color(0xFF0077B5), content),
+                    _buildShareButton('Twitter', FontAwesomeIcons.xTwitter,
+                        const Color(0xFF1DA1F2), content),
+                    _buildShareButton('Instagram', FontAwesomeIcons.instagram,
+                        const Color(0xFFE4405F), content),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.visibility, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.visibility,
+                        size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
-                    Text('${content.views}', style: TextStyle(color: Colors.grey.shade600)),
+                    Text('${content.views}',
+                        style: TextStyle(color: Colors.grey.shade600)),
                     const SizedBox(width: 16),
-                    Icon(Icons.ios_share, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.ios_share,
+                        size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
-                    Text('${content.shares}', style: TextStyle(color: Colors.grey.shade600)),
+                    Text('${content.shares}',
+                        style: TextStyle(color: Colors.grey.shade600)),
                   ],
                 ),
               ],
@@ -412,4 +536,3 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     );
   }
 }
-
