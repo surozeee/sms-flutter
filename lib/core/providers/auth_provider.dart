@@ -15,6 +15,8 @@ import '../models/member_register_request.dart';
 import '../models/member_register_response.dart';
 import '../models/member_delete_response.dart';
 import '../models/bulk_register_response.dart';
+import '../models/content_create_request.dart';
+import '../models/content_create_response.dart';
 import '../services/auth_cache_service.dart';
 import '../services/profile_cache_service.dart';
 
@@ -612,6 +614,72 @@ class BulkRegister extends _$BulkRegister {
       final errorMessage = e.message ?? 
                            _extractErrorMessage(e.response?.data) ??
                            'Failed to bulk register members';
+      
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+/// Provider to create content
+@riverpod
+class ContentCreate extends _$ContentCreate {
+  @override
+  Future<ContentCreateResponse?> build() async {
+    return null;
+  }
+
+  Future<ContentCreateResponse> createContent(ContentCreateRequest request) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+      
+      final response = await dioClient.postJson(
+        ApiEndpoints.contentCreate,
+        data: request.toJson(),
+        requiresAuth: true, // Content creation requires authentication
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final contentResponse = ContentCreateResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+        
+        // Check if status is SUCCESS
+        if (contentResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(contentResponse);
+          return contentResponse;
+        } else {
+          // Handle error response
+          final errorMessage = contentResponse.message ?? 
+                              'Failed to create content';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message: 'Failed to create content with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Use the message from DioException (which comes from interceptor with API message)
+      // or extract from response data as fallback
+      final errorMessage = e.message ?? 
+                           _extractErrorMessage(e.response?.data) ??
+                           'Failed to create content';
       
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;

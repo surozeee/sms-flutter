@@ -266,7 +266,7 @@ final memberDeleteProvider = AutoDisposeAsyncNotifierProvider<MemberDelete,
 );
 
 typedef _$MemberDelete = AutoDisposeAsyncNotifier<MemberDeleteResponse?>;
-String _$bulkRegisterHash() => r'dc1b4c69f4eecb60cfc61b649b569fc792f486d1';
+String _$bulkRegisterHash() => r'8dcdcfc9a73fb69ef639c718138a4108813177f0';
 
 /// Provider to bulk register members from Excel file
 ///
@@ -283,6 +283,24 @@ final bulkRegisterProvider = AutoDisposeAsyncNotifierProvider<BulkRegister,
 );
 
 typedef _$BulkRegister = AutoDisposeAsyncNotifier<BulkRegisterResponse?>;
+String _$contentCreateHash() => r'413001219d1de422dcb581711abfb6b6c49b07a9';
+
+/// Provider to create content
+///
+/// Copied from [ContentCreate].
+@ProviderFor(ContentCreate)
+final contentCreateProvider = AutoDisposeAsyncNotifierProvider<ContentCreate,
+    ContentCreateResponse?>.internal(
+  ContentCreate.new,
+  name: r'contentCreateProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$contentCreateHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$ContentCreate = AutoDisposeAsyncNotifier<ContentCreateResponse?>;
 String _$membersListHash() => r'5ae06cd2bfb5f962e0f0bd9f02b83445cce54349';
 
 /// Provider to fetch members list

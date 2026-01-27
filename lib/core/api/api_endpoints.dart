@@ -54,6 +54,7 @@ class ApiEndpoints {
   // Content endpoints
   static const String content = '/content';
   static const String uploadContent = '/content/upload';
+  static const String contentCreate = '/mobile/content/create';
 
   // Admin endpoints
   static const String adminUsers = '/admin/users';
