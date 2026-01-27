@@ -1,22 +1,25 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
+
+import '../../core/api/api_endpoints.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../models/contact_model.dart';
 import '../../services/contact_service.dart';
-import '../../services/sms_service.dart';
-import '../../services/excel_service.dart';
 import '../../services/csv_service.dart';
+import '../../services/excel_service.dart';
 
 enum ContactSource { sim, csv, excel }
 
-class AdminSmsScreen extends StatefulWidget {
+class AdminSmsScreen extends ConsumerStatefulWidget {
   const AdminSmsScreen({super.key});
 
   @override
-  State<AdminSmsScreen> createState() => _AdminSmsScreenState();
+  ConsumerState<AdminSmsScreen> createState() => _AdminSmsScreenState();
 }
 
-class _AdminSmsScreenState extends State<AdminSmsScreen> {
+class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
   ContactSource _selectedSource = ContactSource.sim;
   List<ContactModel> _contacts = [];
   Map<String, List<ContactModel>> _groupedContacts = {};
@@ -26,6 +29,7 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isSending = false;
+  bool _isSendingViaServer = false;
   String _statusMessage = '';
   int _sentCount = 0;
   int _failedCount = 0;
@@ -358,6 +362,10 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
 
     if (confirm != true) return;
 
+    // Prepare mobile numbers list (outside try block for error handling)
+    final mobileNumbers =
+        selected.map((contact) => contact.phoneNumber).toList();
+
     setState(() {
       _isSending = true;
       _statusMessage = 'Sending SMS...';
@@ -366,67 +374,432 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
     });
 
     try {
-      final result = await SmsService.sendBulkSms(
-        contacts: selected,
-        message: _messageController.text.trim(),
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      // Call bulk SMS API
+      final response = await dioClient.postJson(
+        ApiEndpoints.mobileBulkSendSms,
+        data: {
+          'mobileNumbers': mobileNumbers,
+          'message': _messageController.text.trim(),
+          'smsType': 'MOBILE',
+        },
+        requiresAuth: true,
       );
 
-      setState(() {
-        _isSending = false;
-        _sentCount = result['sentCount'] ?? 0;
-        _failedCount = result['failedCount'] ?? 0;
-        _statusMessage = result['message'] ?? 'Completed';
-      });
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data;
+        final status = responseData is Map<String, dynamic>
+            ? responseData['status'] as String?
+            : null;
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('SMS Status'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Total Selected: ${selected.length}'),
-                const SizedBox(height: 8),
-                Text(
-                  'Sent: $_sentCount',
-                  style: const TextStyle(color: Colors.green),
+        if (status == 'SUCCESS') {
+          final sentCount = responseData is Map<String, dynamic>
+              ? (responseData['data']?['sentCount'] ?? mobileNumbers.length)
+                  as int?
+              : mobileNumbers.length;
+
+          setState(() {
+            _isSending = false;
+            _sentCount = sentCount ?? mobileNumbers.length;
+            _failedCount =
+                mobileNumbers.length - (sentCount ?? mobileNumbers.length);
+            _statusMessage = responseData is Map<String, dynamic>
+                ? (responseData['message'] ?? 'SMS sent successfully') as String
+                : 'SMS sent successfully';
+          });
+
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('SMS Status'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Total Selected: ${selected.length}'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sent: $_sentCount',
+                      style: const TextStyle(color: Colors.green),
+                    ),
+                    if (_failedCount > 0)
+                      Text(
+                        'Failed: $_failedCount',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(_statusMessage),
+                  ],
                 ),
-                if (_failedCount > 0)
-                  Text(
-                    'Failed: $_failedCount',
-                    style: const TextStyle(color: Colors.red),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (_sentCount > 0) {
+                        _messageController.clear();
+                      }
+                    },
+                    child: const Text('OK'),
                   ),
-                const SizedBox(height: 8),
-                Text(_statusMessage),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (_sentCount > 0) {
-                    _messageController.clear();
-                  }
-                },
-                child: const Text('OK'),
+                ],
               ),
-            ],
-          ),
-        );
+            );
+          }
+        } else {
+          // Handle error response
+          final errorMessage = responseData is Map<String, dynamic>
+              ? (responseData['message'] ?? 'Failed to send SMS') as String
+              : 'Failed to send SMS';
+
+          setState(() {
+            _isSending = false;
+            _statusMessage = errorMessage;
+            _failedCount = mobileNumbers.length;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        throw Exception(
+            'Failed to send SMS with status: ${response.statusCode}');
       }
-    } catch (e) {
+    } on DioException catch (e) {
+      // Extract error message from API response
+      String errorMessage = 'Failed to send SMS';
+
+      // Try to get message from DioException (which comes from interceptor)
+      if (e.message != null && e.message!.isNotEmpty) {
+        errorMessage = e.message!;
+      } else if (e.response?.data != null) {
+        // Extract from response data
+        final responseData = e.response!.data;
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] as String? ??
+              responseData['error'] as String? ??
+              responseData['errorMessage'] as String? ??
+              responseData['msg'] as String? ??
+              errorMessage;
+
+          // If message is a list, join it
+          if (responseData['message'] is List) {
+            final messages = responseData['message'] as List;
+            if (messages.isNotEmpty) {
+              errorMessage = messages.map((e) => e.toString()).join(', ');
+            }
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
       setState(() {
         _isSending = false;
-        _statusMessage = 'Error: $e';
+        _statusMessage = errorMessage;
+        _failedCount = mobileNumbers.length;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error sending SMS: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle non-DioException errors
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+
+      setState(() {
+        _isSending = false;
+        _statusMessage = errorMessage;
+        _failedCount = mobileNumbers.length;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendSmsViaServer() async {
+    final selected = _selectedContacts;
+
+    if (selected.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one contact'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_messageController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a message'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Confirm before sending
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Send SMS via Server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Send SMS to ${selected.length} contact(s) via server?',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Please ensure you have sufficient balance to send via server before proceeding.',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Send via Server'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Prepare mobile numbers list (outside try block for error handling)
+    final mobileNumbers =
+        selected.map((contact) => contact.phoneNumber).toList();
+
+    setState(() {
+      _isSendingViaServer = true;
+      _statusMessage = 'Sending SMS via server...';
+      _sentCount = 0;
+      _failedCount = 0;
+    });
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      // Call bulk SMS API
+      final response = await dioClient.postJson(
+        ApiEndpoints.mobileBulkSendSms,
+        data: {
+          'mobileNumbers': mobileNumbers,
+          'message': _messageController.text.trim(),
+          'smsType': 'API',
+        },
+        requiresAuth: true,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data;
+        final status = responseData is Map<String, dynamic>
+            ? responseData['status'] as String?
+            : null;
+
+        if (status == 'SUCCESS') {
+          final sentCount = responseData is Map<String, dynamic>
+              ? (responseData['data']?['sentCount'] ?? mobileNumbers.length)
+                  as int?
+              : mobileNumbers.length;
+
+          setState(() {
+            _isSendingViaServer = false;
+            _sentCount = sentCount ?? mobileNumbers.length;
+            _failedCount =
+                mobileNumbers.length - (sentCount ?? mobileNumbers.length);
+            _statusMessage = responseData is Map<String, dynamic>
+                ? (responseData['message'] ??
+                    'SMS sent successfully via server') as String
+                : 'SMS sent successfully via server';
+          });
+
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('SMS Status (via Server)'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Total Selected: ${selected.length}'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sent: $_sentCount',
+                      style: const TextStyle(color: Colors.green),
+                    ),
+                    if (_failedCount > 0)
+                      Text(
+                        'Failed: $_failedCount',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(_statusMessage),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (_sentCount > 0) {
+                        _messageController.clear();
+                      }
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          // Handle error response
+          final errorMessage = responseData is Map<String, dynamic>
+              ? (responseData['message'] ?? 'Failed to send SMS via server')
+                  as String
+              : 'Failed to send SMS via server';
+
+          setState(() {
+            _isSendingViaServer = false;
+            _statusMessage = errorMessage;
+            _failedCount = mobileNumbers.length;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        throw Exception(
+            'Failed to send SMS via server with status: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      // Extract error message from API response
+      String errorMessage = 'Failed to send SMS via server';
+
+      // Try to get message from DioException (which comes from interceptor)
+      if (e.message != null && e.message!.isNotEmpty) {
+        errorMessage = e.message!;
+      } else if (e.response?.data != null) {
+        // Extract from response data
+        final responseData = e.response!.data;
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] as String? ??
+              responseData['error'] as String? ??
+              responseData['errorMessage'] as String? ??
+              responseData['msg'] as String? ??
+              errorMessage;
+
+          // If message is a list, join it
+          if (responseData['message'] is List) {
+            final messages = responseData['message'] as List;
+            if (messages.isNotEmpty) {
+              errorMessage = messages.map((e) => e.toString()).join(', ');
+            }
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+
+      setState(() {
+        _isSendingViaServer = false;
+        _statusMessage = errorMessage;
+        _failedCount = mobileNumbers.length;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle non-DioException errors
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+
+      setState(() {
+        _isSendingViaServer = false;
+        _statusMessage = errorMessage;
+        _failedCount = mobileNumbers.length;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -758,48 +1131,78 @@ class _AdminSmsScreenState extends State<AdminSmsScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (_statusMessage.isNotEmpty)
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: Text(
-                                _statusMessage,
-                                style: TextStyle(
-                                  color: _sentCount > 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                  fontSize: 12,
-                                ),
-                                textAlign: TextAlign.right,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
+                        // if (_statusMessage.isNotEmpty)
+                        //   Flexible(
+                        //     child: Padding(
+                        //       padding: const EdgeInsets.only(left: 8.0),
+                        //       child: Text(
+                        //         _statusMessage,
+                        //         style: TextStyle(
+                        //           color: _sentCount > 0
+                        //               ? Colors.green
+                        //               : Colors.red,
+                        //           fontSize: 12,
+                        //         ),
+                        //         textAlign: TextAlign.right,
+                        //         overflow: TextOverflow.ellipsis,
+                        //       ),
+                        //     ),
+                        //   ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSending ? null : _sendSms,
-                        icon: _isSending
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.send),
-                        label: Text(_isSending
-                            ? 'Sending...'
-                            : 'Send SMS to $_totalSelected'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(fontSize: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (_isSending || _isSendingViaServer)
+                                ? null
+                                : _sendSms,
+                            icon: _isSending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.send),
+                            label: Text(_isSending ? 'Sending...' : 'Send SMS'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(fontSize: 16),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (_isSending || _isSendingViaServer)
+                                ? null
+                                : _sendSmsViaServer,
+                            icon: _isSendingViaServer
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.cloud_upload),
+                            label: Text(_isSendingViaServer
+                                ? 'Sending...'
+                                : 'Send via Server'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(fontSize: 16),
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

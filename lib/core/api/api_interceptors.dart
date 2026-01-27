@@ -97,6 +97,29 @@ class ApiInterceptors extends Interceptor {
 
     // Handle 401 Unauthorized - Token expired or invalid
     if (err.response?.statusCode == 401) {
+      // Extract error message from response
+      String errorMessage = 'Unauthorized. Please login again.';
+      if (err.response?.data != null) {
+        final responseData = err.response!.data;
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] as String? ??
+              responseData['error'] as String? ??
+              responseData['errorMessage'] as String? ??
+              responseData['msg'] as String? ??
+              errorMessage;
+          
+          // If message is a list, join it
+          if (responseData['message'] is List) {
+            final messages = responseData['message'] as List;
+            if (messages.isNotEmpty) {
+              errorMessage = messages.map((e) => e.toString()).join(', ');
+            }
+          }
+        } else if (responseData is String) {
+          errorMessage = responseData;
+        }
+      }
+      
       final requiresAuth = err.requestOptions.extra['requiresAuth'] as bool? ?? true;
       
       // Only attempt token refresh if the request required authentication
@@ -128,22 +151,22 @@ class ApiInterceptors extends Interceptor {
               return handler.resolve(response);
             } catch (e) {
               // If retry fails, clear tokens and redirect to login
-              await _handleUnauthorized();
+              await _handleUnauthorized(errorMessage);
               return handler.reject(err);
             }
           } else {
             // Refresh failed, clear tokens and redirect to login
-            await _handleUnauthorized();
+            await _handleUnauthorized(errorMessage);
             return handler.reject(err);
           }
         } catch (e) {
           // On any error, clear tokens and redirect to login
-          await _handleUnauthorized();
+          await _handleUnauthorized(errorMessage);
           return handler.reject(err);
         }
       } else {
         // 401 on non-auth request - still clear tokens and redirect
-        await _handleUnauthorized();
+        await _handleUnauthorized(errorMessage);
         return handler.reject(err);
       }
     }
@@ -204,7 +227,7 @@ class ApiInterceptors extends Interceptor {
   }
 
   /// Handle unauthorized access (401) - Clear tokens and redirect to login
-  Future<void> _handleUnauthorized() async {
+  Future<void> _handleUnauthorized([String? errorMessage]) async {
     // Clear tokens
     clearTokens();
     
@@ -213,6 +236,22 @@ class ApiInterceptors extends Interceptor {
     
     // Navigate to RoleSelectionScreen using global navigator key
     if (navigatorKey.currentContext != null) {
+      final context = navigatorKey.currentContext!;
+      
+      // Show error message if provided
+      if (errorMessage != null && errorMessage.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      
+      // Navigate after a short delay to ensure SnackBar is visible
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const RoleSelectionScreen(),

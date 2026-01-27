@@ -30,6 +30,7 @@ class ApiEndpoints {
   static const String membersList = '/mobile/members/list';
   static const String memberRegister = '/mobile/members/register';
   static const String bulkRegister = '/mobile/members/bulk-register-csv';
+  static const String mobileBulkSendSms = '/mobile/sms/bulk-send';
 
   // Party/Booth endpoints
   static const String boothList = '/party/booth/list-pageable';
