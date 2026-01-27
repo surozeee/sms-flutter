@@ -17,6 +17,8 @@ import '../models/member_delete_response.dart';
 import '../models/bulk_register_response.dart';
 import '../models/content_create_request.dart';
 import '../models/content_create_response.dart';
+import '../models/push_notifications_list_request.dart';
+import '../models/push_notifications_list_response.dart';
 import '../services/auth_cache_service.dart';
 import '../services/profile_cache_service.dart';
 
@@ -790,6 +792,80 @@ class MembersList extends _$MembersList {
       final errorMessage = e.message ?? 
                            _extractErrorMessage(e.response?.data) ??
                            'Failed to fetch members';
+      
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+/// Provider for fetching push notifications list
+@riverpod
+class PushNotificationsList extends _$PushNotificationsList {
+  @override
+  Future<PushNotificationsListResponse?> build() async {
+    return null;
+  }
+
+  Future<PushNotificationsListResponse> fetchPushNotifications({
+    int page = 0,
+    int size = 10,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+      
+      final request = PushNotificationsListRequest(
+        page: page,
+        size: size,
+      );
+      
+      final response = await dioClient.postJson(
+        ApiEndpoints.pushNotificationsList,
+        data: request.toJson(),
+        requiresAuth: true, // Push notifications list requires authentication
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final pushNotificationsResponse = PushNotificationsListResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+        
+        // Check if status is SUCCESS
+        if (pushNotificationsResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(pushNotificationsResponse);
+          return pushNotificationsResponse;
+        } else {
+          // Handle error response
+          final errorMessage = pushNotificationsResponse.message ?? 
+                              'Failed to fetch push notifications';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message: 'Failed to fetch push notifications with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Use the message from DioException (which comes from interceptor with API message)
+      // or extract from response data as fallback
+      final errorMessage = e.message ?? 
+                           _extractErrorMessage(e.response?.data) ??
+                           'Failed to fetch push notifications';
       
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;

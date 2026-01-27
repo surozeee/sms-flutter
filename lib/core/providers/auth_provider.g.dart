@@ -318,5 +318,25 @@ final membersListProvider = AutoDisposeAsyncNotifierProvider<MembersList,
 );
 
 typedef _$MembersList = AutoDisposeAsyncNotifier<MembersListResponse?>;
+String _$pushNotificationsListHash() =>
+    r'ffdc0a2bb52d8ba429639093fdb88300f6dd3183';
+
+/// Provider for fetching push notifications list
+///
+/// Copied from [PushNotificationsList].
+@ProviderFor(PushNotificationsList)
+final pushNotificationsListProvider = AutoDisposeAsyncNotifierProvider<
+    PushNotificationsList, PushNotificationsListResponse?>.internal(
+  PushNotificationsList.new,
+  name: r'pushNotificationsListProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$pushNotificationsListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$PushNotificationsList
+    = AutoDisposeAsyncNotifier<PushNotificationsListResponse?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
