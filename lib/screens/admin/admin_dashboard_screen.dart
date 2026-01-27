@@ -7,6 +7,7 @@ import 'admin_sms_screen.dart';
 import 'content_management_screen.dart';
 import 'member_management_screen.dart';
 import 'push_history_screen.dart';
+import '../../screens/packages/package_list_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -56,10 +57,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch profile provider to automatically fetch if not cached
-    // This will load from cache first, then fetch from API if needed
-    ref.watch(userProfileProviderProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
@@ -233,6 +230,25 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PackageListScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_circle_outline),
+                          label: const Text('Add Credit'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),

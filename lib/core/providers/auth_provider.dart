@@ -1,24 +1,28 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
-import '../api/dio_client.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../api/api_endpoints.dart';
-import '../models/register_request.dart';
-import '../models/register_response.dart';
-import '../models/login_request.dart';
-import '../models/login_response.dart';
-import '../models/user_profile.dart';
-import '../models/members_list_request.dart';
-import '../models/members_list_response.dart';
+import '../api/dio_client.dart';
+import '../models/bank_info_response.dart';
 import '../models/booth_list_request.dart';
 import '../models/booth_list_response.dart';
-import '../models/member_register_request.dart';
-import '../models/member_register_response.dart';
-import '../models/member_delete_response.dart';
 import '../models/bulk_register_response.dart';
 import '../models/content_create_request.dart';
 import '../models/content_create_response.dart';
+import '../models/login_request.dart';
+import '../models/login_response.dart';
+import '../models/member_delete_response.dart';
+import '../models/member_register_request.dart';
+import '../models/member_register_response.dart';
+import '../models/members_list_request.dart';
+import '../models/members_list_response.dart';
+import '../models/packages_list_request.dart';
+import '../models/packages_list_response.dart';
 import '../models/push_notifications_list_request.dart';
 import '../models/push_notifications_list_response.dart';
+import '../models/register_request.dart';
+import '../models/register_response.dart';
+import '../models/user_profile.dart';
 import '../services/auth_cache_service.dart';
 import '../services/profile_cache_service.dart';
 
@@ -27,19 +31,19 @@ part 'auth_provider.g.dart';
 @riverpod
 Future<DioClient> dioClient(DioClientRef ref) async {
   final client = DioClientSingleton.instance;
-  
+
   // Load cached tokens on initialization
   final accessToken = await AuthCacheService.getAccessToken();
   final refreshToken = await AuthCacheService.getRefreshToken();
-  
+
   if (accessToken != null && accessToken.isNotEmpty) {
     client.setAuthToken(accessToken);
   }
-  
+
   if (refreshToken != null && refreshToken.isNotEmpty) {
     client.setRefreshToken(refreshToken);
   }
-  
+
   return client;
 }
 
@@ -82,18 +86,30 @@ class Logout extends _$Logout {
   }
 
   Future<void> logout() async {
-    // Clear cached login data
-    await AuthCacheService.clearLoginData();
-    
-    // Clear cached profile data
-    await ProfileCacheService.clearProfile();
-    
-    // Clear tokens from DioClient
+    // Clear tokens from DioClient FIRST to prevent any API calls
     final dioClient = await ref.read(dioClientProvider.future);
     dioClient.clearTokens();
-    
+
+    // Clear cached login data FIRST
+    await AuthCacheService.clearLoginData();
+
+    // Clear cached profile data
+    await ProfileCacheService.clearProfile();
+
+    // Immediately set profile provider state to null to prevent fetching
+    try {
+      // ref.read(userProfileProviderProvider.notifier).state = const AsyncValue.data(null);
+    } catch (_) {
+      // Provider might not be initialized, ignore
+    }
+
     // Invalidate related providers to update UI
+    // Invalidate isLoggedIn first so other providers can check it
     ref.invalidate(isLoggedInProvider);
+
+    // Wait a bit to ensure isLoggedIn is updated before invalidating other providers
+    await Future.delayed(const Duration(milliseconds: 50));
+
     ref.invalidate(userTypeProvider);
     ref.invalidate(accessTokenProvider);
     ref.invalidate(refreshTokenProvider);
@@ -102,7 +118,7 @@ class Logout extends _$Logout {
     ref.invalidate(userProfileProviderProvider); // Clear profile
     ref.invalidate(profileDataProvider); // Clear profile data
     ref.invalidate(userBalanceProvider); // Clear balance
-    
+
     state = const AsyncValue.data(null);
   }
 }
@@ -119,7 +135,7 @@ class Register extends _$Register {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.userRegister,
         data: request.toJson(),
@@ -132,7 +148,7 @@ class Register extends _$Register {
               ? response.data
               : {'data': response.data},
         );
-        
+
         state = AsyncValue.data(registerResponse);
         return registerResponse;
       } else {
@@ -146,10 +162,10 @@ class Register extends _$Register {
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Registration failed';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Registration failed';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -171,7 +187,7 @@ class Login extends _$Login {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.userLogin,
         data: request.toJson(),
@@ -184,18 +200,18 @@ class Login extends _$Login {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Store tokens if login is successful
         if (loginResponse.success == true && loginResponse.data != null) {
           final accessToken = loginResponse.data?.accessToken;
           final refreshToken = loginResponse.data?.refreshToken;
           final userType = loginResponse.data?.userType;
-          
+
           if (accessToken != null && refreshToken != null && userType != null) {
             // Store in DioClient for immediate use
             dioClient.setAuthToken(accessToken);
             dioClient.setRefreshToken(refreshToken);
-            
+
             // Cache login data for persistence
             await AuthCacheService.saveLoginData(
               accessToken: accessToken,
@@ -204,7 +220,7 @@ class Login extends _$Login {
             );
           }
         }
-        
+
         state = AsyncValue.data(loginResponse);
         return loginResponse;
       } else {
@@ -214,7 +230,7 @@ class Login extends _$Login {
               ? response.data
               : {'success': false, 'message': 'Login failed'},
         );
-        
+
         state = AsyncValue.data(errorResponse);
         return errorResponse;
       }
@@ -233,9 +249,8 @@ class Login extends _$Login {
           // If parsing fails, use default error
           final errorResponse = LoginResponse(
             success: false,
-            message: e.response?.data?['message'] ?? 
-                     e.message ?? 
-                     'Login failed',
+            message:
+                e.response?.data?['message'] ?? e.message ?? 'Login failed',
             code: e.response?.data?['code'],
           );
           state = AsyncValue.data(errorResponse);
@@ -265,22 +280,52 @@ class Login extends _$Login {
 class UserProfileProvider extends _$UserProfileProvider {
   @override
   Future<UserProfile?> build() async {
+    // Check if user is logged in first
+    final isLoggedIn = await ref.read(isLoggedInProvider.future);
+    if (!isLoggedIn) {
+      // User is not logged in, return null without fetching
+      return null;
+    }
+
+    // Also check if we have an access token - if not, don't fetch
+    final accessToken = await ref.read(accessTokenProvider.future);
+    if (accessToken == null || accessToken.isEmpty) {
+      // No access token, return null without fetching
+      return null;
+    }
+
     // Try to load from cache first
     final cachedProfile = await ProfileCacheService.getProfile();
     if (cachedProfile != null) {
       return cachedProfile;
     }
-    
-    // If no cache, fetch from API
+
+    // If no cache and user is logged in with valid token, fetch from API
     return await fetchProfile();
   }
 
   Future<UserProfile?> fetchProfile() async {
+    // Check if user is logged in before fetching
+    final isLoggedIn = await ref.read(isLoggedInProvider.future);
+    if (!isLoggedIn) {
+      // User is not logged in, return null without making API call
+      state = const AsyncValue.data(null);
+      return null;
+    }
+
+    // Also check if we have an access token - if not, don't fetch
+    final accessToken = await ref.read(accessTokenProvider.future);
+    if (accessToken == null || accessToken.isEmpty) {
+      // No access token, return null without making API call
+      state = const AsyncValue.data(null);
+      return null;
+    }
+
     state = const AsyncValue.loading();
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.get(
         ApiEndpoints.mobileProfile,
         requiresAuth: true, // Profile requires authentication
@@ -292,14 +337,15 @@ class UserProfileProvider extends _$UserProfileProvider {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Cache the profile
-        if (profileResponse.data != null && profileResponse.data!.user != null) {
+        if (profileResponse.data != null &&
+            profileResponse.data!.user != null) {
           await ProfileCacheService.saveProfile(profileResponse);
           state = AsyncValue.data(profileResponse.data!.user);
           return profileResponse.data!.user;
         }
-        
+
         state = const AsyncValue.data(null);
         return null;
       } else {
@@ -313,10 +359,10 @@ class UserProfileProvider extends _$UserProfileProvider {
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to fetch profile';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch profile';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -327,6 +373,20 @@ class UserProfileProvider extends _$UserProfileProvider {
 
   /// Refresh profile from API
   Future<void> refreshProfile() async {
+    // Check if user is logged in before refreshing
+    final isLoggedIn = await ref.read(isLoggedInProvider.future);
+    if (!isLoggedIn) {
+      // User is not logged in, don't refresh
+      return;
+    }
+
+    // Also check if we have an access token
+    final accessToken = await ref.read(accessTokenProvider.future);
+    if (accessToken == null || accessToken.isEmpty) {
+      // No access token, don't refresh
+      return;
+    }
+
     await fetchProfile();
   }
 }
@@ -334,16 +394,23 @@ class UserProfileProvider extends _$UserProfileProvider {
 /// Provider to get profile data (includes balance, roleType)
 @riverpod
 Future<ProfileData?> profileData(ProfileDataRef ref) async {
+  // Check if user is logged in first
+  final isLoggedIn = await ref.read(isLoggedInProvider.future);
+  if (!isLoggedIn) {
+    // User is not logged in, return null without fetching
+    return null;
+  }
+
   // Try to load from cache first
   final cachedData = await ProfileCacheService.getProfileData();
   if (cachedData != null) {
     return cachedData;
   }
-  
-  // If no cache, fetch profile which will cache the data
+
+  // If no cache and user is logged in, fetch profile which will cache the data
   final profileNotifier = ref.read(userProfileProviderProvider.notifier);
   await profileNotifier.fetchProfile();
-  
+
   // Return cached data after fetch
   return await ProfileCacheService.getProfileData();
 }
@@ -351,6 +418,13 @@ Future<ProfileData?> profileData(ProfileDataRef ref) async {
 /// Provider to get user balance
 @riverpod
 Future<double> userBalance(UserBalanceRef ref) async {
+  // Check if user is logged in first
+  final isLoggedIn = await ref.read(isLoggedInProvider.future);
+  if (!isLoggedIn) {
+    // User is not logged in, return 0.0
+    return 0.0;
+  }
+
   return await ProfileCacheService.getBalance();
 }
 
@@ -370,12 +444,12 @@ class BoothList extends _$BoothList {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final request = BoothListRequest(
         page: page,
         size: size,
       );
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.boothList,
         data: request.toJson(),
@@ -388,15 +462,15 @@ class BoothList extends _$BoothList {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (boothResponse.status == 'SUCCESS') {
           state = AsyncValue.data(boothResponse);
           return boothResponse;
         } else {
           // Handle error response
-          final errorMessage = boothResponse.message ?? 
-                              'Failed to fetch booths';
+          final errorMessage =
+              boothResponse.message ?? 'Failed to fetch booths';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -415,10 +489,10 @@ class BoothList extends _$BoothList {
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to fetch booths';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch booths';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -436,12 +510,13 @@ class MemberRegister extends _$MemberRegister {
     return null;
   }
 
-  Future<MemberRegisterResponse> registerMember(MemberRegisterRequest request) async {
+  Future<MemberRegisterResponse> registerMember(
+      MemberRegisterRequest request) async {
     state = const AsyncValue.loading();
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.memberRegister,
         data: request.toJson(),
@@ -454,15 +529,15 @@ class MemberRegister extends _$MemberRegister {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (registerResponse.status == 'SUCCESS') {
           state = AsyncValue.data(registerResponse);
           return registerResponse;
         } else {
           // Handle error response
-          final errorMessage = registerResponse.message ?? 
-                              'Failed to register member';
+          final errorMessage =
+              registerResponse.message ?? 'Failed to register member';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -475,16 +550,17 @@ class MemberRegister extends _$MemberRegister {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to register member with status: ${response.statusCode}',
+          message:
+              'Failed to register member with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to register member';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to register member';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -507,27 +583,29 @@ class MemberDelete extends _$MemberDelete {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.deleteJson(
         ApiEndpoints.deleteMember(memberId),
         requiresAuth: true, // Member deletion requires authentication
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
         final deleteResponse = MemberDeleteResponse.fromJson(
           response.data is Map<String, dynamic>
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (deleteResponse.status == 'SUCCESS') {
           state = AsyncValue.data(deleteResponse);
           return deleteResponse;
         } else {
           // Handle error response
-          final errorMessage = deleteResponse.message ?? 
-                              'Failed to delete member';
+          final errorMessage =
+              deleteResponse.message ?? 'Failed to delete member';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -540,16 +618,17 @@ class MemberDelete extends _$MemberDelete {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to delete member with status: ${response.statusCode}',
+          message:
+              'Failed to delete member with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to delete member';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to delete member';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -572,7 +651,7 @@ class BulkRegister extends _$BulkRegister {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.uploadFile(
         ApiEndpoints.bulkRegister,
         filePath,
@@ -586,15 +665,15 @@ class BulkRegister extends _$BulkRegister {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (bulkResponse.status == 'SUCCESS') {
           state = AsyncValue.data(bulkResponse);
           return bulkResponse;
         } else {
           // Handle error response
-          final errorMessage = bulkResponse.message ?? 
-                              'Failed to bulk register members';
+          final errorMessage =
+              bulkResponse.message ?? 'Failed to bulk register members';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -607,16 +686,17 @@ class BulkRegister extends _$BulkRegister {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to bulk register members with status: ${response.statusCode}',
+          message:
+              'Failed to bulk register members with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to bulk register members';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to bulk register members';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -634,12 +714,13 @@ class ContentCreate extends _$ContentCreate {
     return null;
   }
 
-  Future<ContentCreateResponse> createContent(ContentCreateRequest request) async {
+  Future<ContentCreateResponse> createContent(
+      ContentCreateRequest request) async {
     state = const AsyncValue.loading();
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.contentCreate,
         data: request.toJson(),
@@ -652,15 +733,15 @@ class ContentCreate extends _$ContentCreate {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (contentResponse.status == 'SUCCESS') {
           state = AsyncValue.data(contentResponse);
           return contentResponse;
         } else {
           // Handle error response
-          final errorMessage = contentResponse.message ?? 
-                              'Failed to create content';
+          final errorMessage =
+              contentResponse.message ?? 'Failed to create content';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -673,16 +754,17 @@ class ContentCreate extends _$ContentCreate {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to create content with status: ${response.statusCode}',
+          message:
+              'Failed to create content with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to create content';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to create content';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -695,18 +777,18 @@ class ContentCreate extends _$ContentCreate {
 /// Helper function to extract error message from API response data
 String? _extractErrorMessage(dynamic responseData) {
   if (responseData == null) return null;
-  
+
   if (responseData is Map<String, dynamic>) {
     // Try common error message fields
     final message = responseData['message'] as String? ??
         responseData['error'] as String? ??
         responseData['errorMessage'] as String? ??
         responseData['msg'] as String?;
-    
+
     if (message != null && message.isNotEmpty) {
       return message;
     }
-    
+
     // If message is a list, join it
     if (responseData['message'] is List) {
       final messages = responseData['message'] as List;
@@ -714,17 +796,16 @@ String? _extractErrorMessage(dynamic responseData) {
         return messages.map((e) => e.toString()).join(', ');
       }
     }
-    
+
     // Check for nested error objects
     if (responseData['error'] is Map) {
       final errorObj = responseData['error'] as Map;
-      return errorObj['message'] as String? ??
-          errorObj['error'] as String?;
+      return errorObj['message'] as String? ?? errorObj['error'] as String?;
     }
   } else if (responseData is String) {
     return responseData;
   }
-  
+
   return null;
 }
 
@@ -744,12 +825,12 @@ class MembersList extends _$MembersList {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final request = MembersListRequest(
         page: page,
         size: size,
       );
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.membersList,
         data: request.toJson(),
@@ -762,15 +843,15 @@ class MembersList extends _$MembersList {
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (membersResponse.status == 'SUCCESS') {
           state = AsyncValue.data(membersResponse);
           return membersResponse;
         } else {
           // Handle error response
-          final errorMessage = membersResponse.message ?? 
-                              'Failed to fetch members';
+          final errorMessage =
+              membersResponse.message ?? 'Failed to fetch members';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -783,16 +864,17 @@ class MembersList extends _$MembersList {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to fetch members with status: ${response.statusCode}',
+          message:
+              'Failed to fetch members with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to fetch members';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch members';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {
@@ -818,12 +900,12 @@ class PushNotificationsList extends _$PushNotificationsList {
 
     try {
       final dioClient = await ref.read(dioClientProvider.future);
-      
+
       final request = PushNotificationsListRequest(
         page: page,
         size: size,
       );
-      
+
       final response = await dioClient.postJson(
         ApiEndpoints.pushNotificationsList,
         data: request.toJson(),
@@ -831,20 +913,21 @@ class PushNotificationsList extends _$PushNotificationsList {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final pushNotificationsResponse = PushNotificationsListResponse.fromJson(
+        final pushNotificationsResponse =
+            PushNotificationsListResponse.fromJson(
           response.data is Map<String, dynamic>
               ? response.data
               : {'data': response.data},
         );
-        
+
         // Check if status is SUCCESS
         if (pushNotificationsResponse.status == 'SUCCESS') {
           state = AsyncValue.data(pushNotificationsResponse);
           return pushNotificationsResponse;
         } else {
           // Handle error response
-          final errorMessage = pushNotificationsResponse.message ?? 
-                              'Failed to fetch push notifications';
+          final errorMessage = pushNotificationsResponse.message ??
+              'Failed to fetch push notifications';
           throw DioException(
             requestOptions: response.requestOptions,
             response: response,
@@ -857,16 +940,158 @@ class PushNotificationsList extends _$PushNotificationsList {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Failed to fetch push notifications with status: ${response.statusCode}',
+          message:
+              'Failed to fetch push notifications with status: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {
       // Use the message from DioException (which comes from interceptor with API message)
       // or extract from response data as fallback
-      final errorMessage = e.message ?? 
-                           _extractErrorMessage(e.response?.data) ??
-                           'Failed to fetch push notifications';
-      
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch push notifications';
+
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+/// Provider for fetching packages list
+@riverpod
+class PackagesList extends _$PackagesList {
+  @override
+  Future<PackagesListResponse?> build() async {
+    return null;
+  }
+
+  Future<PackagesListResponse> fetchPackages({
+    int page = 0,
+    int size = 10,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      final request = PackagesListRequest(
+        page: page,
+        size: size,
+      );
+
+      final response = await dioClient.postJson(
+        ApiEndpoints.packagesList,
+        data: request.toJson(),
+        requiresAuth: true, // Packages list requires authentication
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final packagesResponse = PackagesListResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+
+        // Check if status is SUCCESS
+        if (packagesResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(packagesResponse);
+          return packagesResponse;
+        } else {
+          // Handle error response
+          final errorMessage =
+              packagesResponse.message ?? 'Failed to fetch packages';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message:
+              'Failed to fetch packages with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Use the message from DioException (which comes from interceptor with API message)
+      // or extract from response data as fallback
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch packages';
+
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+/// Provider for fetching bank information
+@riverpod
+class BankInfoProvider extends _$BankInfoProvider {
+  @override
+  Future<BankInfoResponse?> build() async {
+    return null;
+  }
+
+  Future<BankInfoResponse> fetchBankInfo() async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      final response = await dioClient.get(
+        ApiEndpoints.bankInfo,
+        requiresAuth: true, // Bank info requires authentication
+      );
+
+      if (response.statusCode == 200) {
+        final bankInfoResponse = BankInfoResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+
+        // Check if status is SUCCESS
+        if (bankInfoResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(bankInfoResponse);
+          return bankInfoResponse;
+        } else {
+          // Handle error response
+          final errorMessage =
+              bankInfoResponse.message ?? 'Failed to fetch bank information';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message:
+              'Failed to fetch bank information with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Use the message from DioException (which comes from interceptor with API message)
+      // or extract from response data as fallback
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch bank information';
+
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;
     } catch (e, stackTrace) {

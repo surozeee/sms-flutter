@@ -338,5 +338,40 @@ final pushNotificationsListProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$PushNotificationsList
     = AutoDisposeAsyncNotifier<PushNotificationsListResponse?>;
+String _$packagesListHash() => r'81a7a7ef6df5f2c1ed2d0270b19e78fc69db0736';
+
+/// Provider for fetching packages list
+///
+/// Copied from [PackagesList].
+@ProviderFor(PackagesList)
+final packagesListProvider = AutoDisposeAsyncNotifierProvider<PackagesList,
+    PackagesListResponse?>.internal(
+  PackagesList.new,
+  name: r'packagesListProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$packagesListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$PackagesList = AutoDisposeAsyncNotifier<PackagesListResponse?>;
+String _$bankInfoProviderHash() => r'3c85b79eebb38529b75250ed025b26848cc04933';
+
+/// Provider for fetching bank information
+///
+/// Copied from [BankInfoProvider].
+@ProviderFor(BankInfoProvider)
+final bankInfoProviderProvider = AutoDisposeAsyncNotifierProvider<
+    BankInfoProvider, BankInfoResponse?>.internal(
+  BankInfoProvider.new,
+  name: r'bankInfoProviderProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$bankInfoProviderHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$BankInfoProvider = AutoDisposeAsyncNotifier<BankInfoResponse?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -10,6 +10,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../models/content_model.dart';
 import '../../services/content_service.dart';
 import '../auth/role_selection_screen.dart';
+import '../packages/package_list_screen.dart';
 import 'member_contacts_screen.dart';
 import 'member_sms_screen.dart';
 import 'member_stats_screen.dart';
@@ -160,10 +161,6 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch profile provider to automatically fetch if not cached
-    // This will load from cache first, then fetch from API if needed
-    ref.watch(userProfileProviderProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('CampaignConnect'),
@@ -333,6 +330,25 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PackageListScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_circle_outline),
+                          label: const Text('Add Credit'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
