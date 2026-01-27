@@ -259,6 +259,18 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
             Consumer(
               builder: (context, ref, child) {
                 final balanceAsync = ref.watch(userBalanceProvider);
+                final profileNotifier = ref.read(userProfileProviderProvider.notifier);
+
+                Future<void> refreshBalance() async {
+                  try {
+                    // Fetch profile from API to update cache
+                    await profileNotifier.refreshProfile();
+                    // Invalidate balance provider to refetch from updated cache
+                    ref.invalidate(userBalanceProvider);
+                  } catch (e) {
+                    // Error handling is done by the provider
+                  }
+                }
                 
                 return Container(
                   margin: const EdgeInsets.all(16),
@@ -271,19 +283,32 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.account_balance_wallet,
-                            color: Theme.of(context).colorScheme.primary,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.account_balance_wallet,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Balance',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Balance',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: refreshBalance,
+                            tooltip: 'Refresh Balance',
+                            iconSize: 20,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
                         ],
                       ),
