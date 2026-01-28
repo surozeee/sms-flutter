@@ -113,7 +113,7 @@ final loginDataProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LoginDataRef = AutoDisposeFutureProviderRef<Map<String, String?>>;
-String _$profileDataHash() => r'34a317c3fb9caa472a5d813f35e9aece9a0c4c27';
+String _$profileDataHash() => r'86f228399e81ab02232ab83fb02f13c316a27192';
 
 /// Provider to get profile data (includes balance, roleType)
 ///
@@ -131,7 +131,7 @@ final profileDataProvider = AutoDisposeFutureProvider<ProfileData?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ProfileDataRef = AutoDisposeFutureProviderRef<ProfileData?>;
-String _$userBalanceHash() => r'5f0af99377843bcdc4a9247c3e5278ea58803eb5';
+String _$userBalanceHash() => r'a8dff59862fb50215f3e0515dbd6eb4a46575fbe';
 
 /// Provider to get user balance
 ///
@@ -149,7 +149,7 @@ final userBalanceProvider = AutoDisposeFutureProvider<double>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserBalanceRef = AutoDisposeFutureProviderRef<double>;
-String _$logoutHash() => r'0bbcc3a48a6f21a56fa1f43516b3a72a1154d678';
+String _$logoutHash() => r'b42809f18a17170b64ce6a96a5bf29168de9b806';
 
 /// Provider for logout functionality
 ///
@@ -196,7 +196,7 @@ final loginProvider =
 
 typedef _$Login = AutoDisposeAsyncNotifier<LoginResponse?>;
 String _$userProfileProviderHash() =>
-    r'8658917e53bf3c84bb4b700cd17b67b4936a6929';
+    r'3bead7501f255eb731ecf69c179c5abbd48c5af1';
 
 /// Provider to fetch and cache user profile
 ///
@@ -301,6 +301,23 @@ final contentCreateProvider = AutoDisposeAsyncNotifierProvider<ContentCreate,
 );
 
 typedef _$ContentCreate = AutoDisposeAsyncNotifier<ContentCreateResponse?>;
+String _$contentsListHash() => r'c789e083e7ae480001a792c4b432a19fd4b50bb7';
+
+/// Provider to fetch contents list
+///
+/// Copied from [ContentsList].
+@ProviderFor(ContentsList)
+final contentsListProvider = AutoDisposeAsyncNotifierProvider<ContentsList,
+    ContentsListResponse?>.internal(
+  ContentsList.new,
+  name: r'contentsListProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$contentsListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$ContentsList = AutoDisposeAsyncNotifier<ContentsListResponse?>;
 String _$membersListHash() => r'5ae06cd2bfb5f962e0f0bd9f02b83445cce54349';
 
 /// Provider to fetch members list

@@ -9,6 +9,8 @@ import '../models/booth_list_response.dart';
 import '../models/bulk_register_response.dart';
 import '../models/content_create_request.dart';
 import '../models/content_create_response.dart';
+import '../models/contents_list_request.dart';
+import '../models/contents_list_response.dart';
 import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../models/member_delete_response.dart';
@@ -764,6 +766,84 @@ class ContentCreate extends _$ContentCreate {
       final errorMessage = e.message ??
           _extractErrorMessage(e.response?.data) ??
           'Failed to create content';
+
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+/// Provider to fetch contents list
+@riverpod
+class ContentsList extends _$ContentsList {
+  @override
+  Future<ContentsListResponse?> build() async {
+    return null;
+  }
+
+  Future<ContentsListResponse> fetchContents({
+    int page = 0,
+    int size = 10,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      final request = ContentsListRequest(
+        page: page,
+        size: size,
+        // search: search,
+        // sortBy: sortBy,
+        // sortDirection: sortDirection,
+      );
+
+      final response = await dioClient.postJson(
+        ApiEndpoints.contentsList,
+        data: request.toJson(),
+        requiresAuth: true,
+      );
+
+      if (response.statusCode == 200) {
+        final contentsResponse = ContentsListResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+
+        // Check if status is SUCCESS
+        if (contentsResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(contentsResponse);
+          return contentsResponse;
+        } else {
+          // Handle error response
+          final errorMessage =
+              contentsResponse.message ?? 'Failed to fetch contents';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message:
+              'Failed to fetch contents with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Use the message from DioException (which comes from interceptor with API message)
+      // or extract from response data as fallback
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch contents';
 
       state = AsyncValue.error(errorMessage, StackTrace.current);
       rethrow;

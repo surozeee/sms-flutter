@@ -60,6 +60,7 @@ class ApiEndpoints {
   static const String content = '/content';
   static const String uploadContent = '/content/upload';
   static const String contentCreate = '/mobile/content/create';
+  static const String contentsList = '/mobile/contents/list';
 
   // Admin endpoints
   static const String adminUsers = '/admin/users';

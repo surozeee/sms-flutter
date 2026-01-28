@@ -1,19 +1,16 @@
-import 'dart:io';
-
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/models/contents_list_response.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../models/content_model.dart';
-import '../../services/content_service.dart';
 import '../auth/role_selection_screen.dart';
 import '../packages/package_list_screen.dart';
 import 'member_contacts_screen.dart';
 import 'member_sms_screen.dart';
-import 'member_stats_screen.dart';
 
 class MemberDashboardScreen extends ConsumerStatefulWidget {
   const MemberDashboardScreen({super.key});
@@ -24,46 +21,106 @@ class MemberDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
-  List<ContentModel> _contents = [];
-  bool _isLoading = true;
+  List<ContentItem> _contents = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadContents();
+    // Defer the call until after the first build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadContents();
+    });
   }
 
   Future<void> _loadContents() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      final contents = await ContentService.getAllContents();
-      // Increment view count for each content
-      for (var content in contents) {
-        await ContentService.incrementViews(content.id);
+      final contentsListNotifier = ref.read(contentsListProvider.notifier);
+      final response = await contentsListNotifier.fetchContents(
+        page: 0,
+        size: 10,
+      );
+
+      if (response.status == 'SUCCESS' && response.data != null) {
+        setState(() {
+          _contents = response.data!.content ?? [];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response.message ?? 'Failed to load contents';
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-      // Reload to get updated view counts
-      final updatedContents = await ContentService.getAllContents();
+    } on DioException catch (e) {
+      // Extract error message from response
+      String errorMsg = 'Failed to load contents';
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map<String, dynamic>) {
+          errorMsg = data['message'] as String? ??
+              data['error'] as String? ??
+              data['errorMessage'] as String? ??
+              e.message ??
+              errorMsg;
+        } else if (data is String) {
+          errorMsg = data;
+        } else if (e.message != null) {
+          errorMsg = e.message!;
+        }
+      } else if (e.message != null) {
+        errorMsg = e.message!;
+      }
+
       setState(() {
-        _contents = updatedContents;
+        _errorMessage = errorMsg;
         _isLoading = false;
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
+        _errorMessage = 'An unexpected error occurred';
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _shareContent(ContentModel content, String platform) async {
-    // Increment share count
-    await ContentService.incrementShares(content.id);
-
-    String shareText = content.title;
-    if (content.text != null) {
-      shareText += '\n\n${content.text}';
+  Future<void> _shareContent(ContentItem content, String platform) async {
+    String shareText = content.title ?? '';
+    if (content.textContent != null && content.textContent!.isNotEmpty) {
+      shareText += '\n\n${content.textContent}';
     }
 
     try {
@@ -113,8 +170,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
           await Share.share(shareText);
       }
 
-      // Reload contents to update share count
-      _loadContents();
+      // Note: Share count is not tracked in the API response
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -391,19 +447,6 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.bar_chart),
-              title: const Text('Statistics'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MemberStatsScreen(),
-                  ),
-                );
-              },
-            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
@@ -429,7 +472,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No content available',
+                            _errorMessage ?? 'No content available',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 16,
@@ -450,44 +493,36 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
     );
   }
 
-  Widget _buildContentCard(ContentModel content) {
+  Widget _buildContentCard(ContentItem content) {
+    // Build image URL - if it's a relative path, prepend base URL
+    String? imageUrl = content.imageUrl;
+    if (imageUrl != null && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://loksandesh.jojolapatech.com/$imageUrl';
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (content.imageUrl != null)
+          if (imageUrl != null)
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
-              child: content.imageUrl!.startsWith('http')
-                  ? Image.network(
-                      content.imageUrl!,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.image, size: 64),
-                        );
-                      },
-                    )
-                  : Image.file(
-                      File(content.imageUrl!),
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.image, size: 64),
-                        );
-                      },
-                    ),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 200,
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.image, size: 64),
+                  );
+                },
+              ),
             ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -495,18 +530,29 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  content.title,
+                  content.title ?? 'Untitled',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (content.text != null) ...[
+                if (content.textContent != null &&
+                    content.textContent!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    content.text!,
+                    content.textContent!,
                     style: TextStyle(
                       color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+                if (content.partyName != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Party: ${content.partyName}',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -530,22 +576,6 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                         const Color(0xFFE4405F), content),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.visibility,
-                        size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text('${content.views}',
-                        style: TextStyle(color: Colors.grey.shade600)),
-                    const SizedBox(width: 16),
-                    Icon(Icons.ios_share,
-                        size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text('${content.shares}',
-                        style: TextStyle(color: Colors.grey.shade600)),
-                  ],
-                ),
               ],
             ),
           ),
@@ -558,7 +588,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
     String platform,
     IconData icon,
     Color color,
-    ContentModel content,
+    ContentItem content,
   ) {
     return Tooltip(
       message: platform,

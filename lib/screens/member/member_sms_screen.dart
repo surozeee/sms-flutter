@@ -1,49 +1,27 @@
 import 'package:flutter/material.dart';
-import '../../services/contact_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/services/profile_cache_service.dart';
 import '../../services/sms_gateway_service.dart';
-import '../contacts_screen.dart';
+import '../packages/package_list_screen.dart';
 
-class MemberSmsScreen extends StatefulWidget {
+class MemberSmsScreen extends ConsumerStatefulWidget {
   const MemberSmsScreen({super.key});
 
   @override
-  State<MemberSmsScreen> createState() => _MemberSmsScreenState();
+  ConsumerState<MemberSmsScreen> createState() => _MemberSmsScreenState();
 }
 
-class _MemberSmsScreenState extends State<MemberSmsScreen> {
-  bool _isLoading = false;
-
-  Future<void> _loadContactsAndCompose() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+class _MemberSmsScreenState extends ConsumerState<MemberSmsScreen> {
+  Future<void> _refreshBalance() async {
     try {
-      final contacts = await ContactService.getSimContacts();
-      final grouped = ContactService.groupByCarrier(contacts);
-
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContactsScreen(
-              groupedContacts: grouped,
-            ),
-          ),
-        );
-      }
+      // Fetch profile from API to update cache
+      final profileNotifier = ref.read(userProfileProviderProvider.notifier);
+      await profileNotifier.refreshProfile();
+      // Trigger rebuild to show updated balance
+      setState(() {});
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      // Error handling is done by the provider
     }
   }
 
@@ -65,20 +43,33 @@ class _MemberSmsScreenState extends State<MemberSmsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'SMS Gateway Balance',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'SMS Gateway Balance',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: _refreshBalance,
+                          tooltip: 'Refresh Balance',
+                          iconSize: 20,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     FutureBuilder<double>(
-                      future: SmsGatewayService.getBalance(),
+                      future: ProfileCacheService.getBalance(),
                       builder: (context, snapshot) {
                         final balance = snapshot.data ?? 0.0;
                         return Text(
-                          'NPR ${balance.toStringAsFixed(2)}',
+                          'Rs. ${balance.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -88,11 +79,23 @@ class _MemberSmsScreenState extends State<MemberSmsScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Show package purchase dialog
-                      },
-                      child: const Text('Purchase Package'),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PackageListScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Purchase Package'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -117,21 +120,6 @@ class _MemberSmsScreenState extends State<MemberSmsScreen> {
                     _buildCostRow('Smart', SmsGatewayService.getSmsCosts()['Smart'] ?? 0.0),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _loadContactsAndCompose,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.message),
-              label: const Text('Compose SMS'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ],
