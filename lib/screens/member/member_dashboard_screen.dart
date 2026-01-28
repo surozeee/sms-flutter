@@ -1,12 +1,17 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:social_sharing_plus/social_sharing_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/contents_list_response.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../services/share_service.dart';
 import '../auth/role_selection_screen.dart';
 import '../packages/package_list_screen.dart';
 import 'member_contacts_screen.dart';
@@ -123,58 +128,115 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
       shareText += '\n\n${content.textContent}';
     }
 
+    // Build image URL - if it's a relative path, prepend base URL
+    String? imageUrl = content.imageUrl;
+    if (imageUrl != null && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://loksandesh.jojolapatech.com/$imageUrl';
+    }
+
     try {
       switch (platform) {
         case 'facebook':
-          await launchUrl(
-            Uri.parse(
-                'https://www.facebook.com/sharer/sharer.php?quote=${Uri.encodeComponent(shareText)}'),
-            mode: LaunchMode.externalApplication,
+          await ShareService.shareTo(
+            SocialPlatform.facebook,
+            imageUrl: imageUrl,
+            text: shareText,
           );
           break;
         case 'whatsapp':
-          await launchUrl(
-            Uri.parse('https://wa.me/?text=${Uri.encodeComponent(shareText)}'),
-            mode: LaunchMode.externalApplication,
+          await ShareService.shareTo(
+            SocialPlatform.whatsapp,
+            imageUrl: imageUrl,
+            text: shareText,
           );
           break;
         case 'viber':
-          await launchUrl(
-            Uri.parse('viber://forward?text=${Uri.encodeComponent(shareText)}'),
-            mode: LaunchMode.externalApplication,
+          await ShareService.shareToViber(
+            imageUrl: imageUrl,
+            text: shareText,
           );
           break;
         case 'linkedin':
-          // LinkedIn share with text
-          await launchUrl(
-            Uri.parse(
-                'https://www.linkedin.com/sharing/share-offsite/?mini=true&summary=${Uri.encodeComponent(shareText)}'),
-            mode: LaunchMode.externalApplication,
+          await ShareService.shareTo(
+            SocialPlatform.linkedin,
+            imageUrl: imageUrl,
+            text: shareText,
           );
           break;
         case 'twitter':
-          await launchUrl(
-            Uri.parse(
-                'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(shareText)}'),
-            mode: LaunchMode.externalApplication,
+          await ShareService.shareTo(
+            SocialPlatform.twitter,
+            imageUrl: imageUrl,
+            text: shareText,
           );
           break;
         case 'instagram':
-          // Instagram doesn't support direct sharing via URL
-          await Share.share(shareText);
-          break;
-        case 'tiktok':
+          // Instagram doesn't have direct support, use general share
           await Share.share(shareText);
           break;
         default:
+          // Use share_plus for general sharing
           await Share.share(shareText);
       }
-
-      // Note: Share count is not tracked in the API response
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sharing: $e')),
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareContentGeneral(ContentItem content) async {
+    String shareText = content.title ?? '';
+    if (content.textContent != null && content.textContent!.isNotEmpty) {
+      shareText += '\n\n${content.textContent}';
+    }
+
+    // Build image URL - if it's a relative path, prepend base URL
+    String? imageUrl = content.imageUrl;
+    if (imageUrl != null && !imageUrl.startsWith('http')) {
+      imageUrl = 'https://loksandesh.jojolapatech.com/$imageUrl';
+    }
+
+    try {
+      // Use share_plus for general sharing (opens system share sheet)
+      if (imageUrl != null) {
+        // Download image and share with XFile
+        try {
+          final response = await http.get(Uri.parse(imageUrl));
+          if (response.statusCode == 200) {
+            final directory = await getTemporaryDirectory();
+            final path = '${directory.path}/temp_share_${DateTime.now().millisecondsSinceEpoch}.png';
+            final file = File(path);
+            await file.writeAsBytes(response.bodyBytes);
+            
+            if (await file.exists()) {
+              await Share.shareXFiles(
+                [XFile(path)],
+                text: shareText,
+              );
+              return;
+            }
+          }
+        } catch (e) {
+          print('Error downloading image for general share: $e');
+          // Fall through to text-only share
+        }
+      }
+      
+      // Share text only if image download failed or no image
+      await Share.share(shareText);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -574,6 +636,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                         const Color(0xFF1DA1F2), content),
                     _buildShareButton('Instagram', FontAwesomeIcons.instagram,
                         const Color(0xFFE4405F), content),
+                    _buildGeneralShareButton(content),
                   ],
                 ),
               ],
@@ -602,6 +665,24 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
           color: color,
           iconSize: 28,
           onPressed: () => _shareContent(content, platform.toLowerCase()),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralShareButton(ContentItem content) {
+    return Tooltip(
+      message: 'Share',
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: IconButton(
+          icon: const Icon(Icons.share, size: 24),
+          color: Colors.grey.shade700,
+          iconSize: 28,
+          onPressed: () => _shareContentGeneral(content),
         ),
       ),
     );
