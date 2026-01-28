@@ -27,14 +27,21 @@ class RoleSelectionScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.how_to_vote,
-                    size: 100,
-                    color: Colors.white,
+                  Image.asset(
+                    'assets/icon/main_logo-removebg.png',
+                    height: 150,
+                    width: 150,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.how_to_vote,
+                        size: 150,
+                        color: Colors.white,
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'CampaignConnect',
+                    'LokSandesh',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,

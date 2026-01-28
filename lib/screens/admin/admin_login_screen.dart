@@ -123,10 +123,17 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.admin_panel_settings,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
+                  Image.asset(
+                    'assets/icon/main_logo-removebg.png',
+                    height: 120,
+                    width: 120,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.admin_panel_settings,
+                        size: 120,
+                        color: Theme.of(context).colorScheme.primary,
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   const Text(

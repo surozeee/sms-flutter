@@ -124,10 +124,17 @@ class _MemberLoginScreenState extends ConsumerState<MemberLoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.people,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
+                  Image.asset(
+                    'assets/icon/main_logo-removebg.png',
+                    height: 120,
+                    width: 120,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.people,
+                        size: 120,
+                        color: Theme.of(context).colorScheme.primary,
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   const Text(

@@ -219,7 +219,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CampaignConnect'),
+        title: const Text('LokSandesh'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
