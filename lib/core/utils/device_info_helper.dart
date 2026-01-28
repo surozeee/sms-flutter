@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../services/fcm_token_cache_service.dart';
 
 /// Helper class to get device information for API headers
 class DeviceInfoHelper {
@@ -60,11 +61,17 @@ class DeviceInfoHelper {
   }
 
   /// Get all device headers as a map
-  static Map<String, String> getDeviceHeaders({String? fcmToken}) {
+  static Future<Map<String, String>> getDeviceHeaders({String? fcmToken}) async {
+    // If FCM token not provided, try to get from cache
+    String? token = fcmToken;
+    if (token == null) {
+      token = await FcmTokenCacheService.getFcmToken();
+    }
+    
     return {
       'Device-Id': getDeviceId(),
       'Platform': getPlatform(),
-      'Fcm-Token': fcmToken ?? '1234', // Default if not provided
+      'Fcm-Token': token ?? '1234', // Default if not provided
       'Device-Name': getDeviceName(),
       'Os-Version': getOsVersion(),
       'App-Version': getAppVersionFormatted(),

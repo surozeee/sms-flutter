@@ -27,6 +27,7 @@ import '../models/register_response.dart';
 import '../models/user_profile.dart';
 import '../services/auth_cache_service.dart';
 import '../services/profile_cache_service.dart';
+import '../services/fcm_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -190,10 +191,22 @@ class Login extends _$Login {
     try {
       final dioClient = await ref.read(dioClientProvider.future);
 
+      // Get FCM token from cache or initialize if needed
+      String? fcmToken = await FcmService.getToken();
+
+      // Prepare headers with FCM token
+      final headers = <String, dynamic>{};
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        headers['Fcm-Token'] = fcmToken;
+      }
+
       final response = await dioClient.postJson(
         ApiEndpoints.userLogin,
         data: request.toJson(),
         requiresAuth: false, // Login doesn't require auth
+        options: Options(
+          headers: headers,
+        ),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

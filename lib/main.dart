@@ -1,14 +1,38 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/auth/role_selection_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/member/member_dashboard_screen.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/services/fcm_service.dart';
 
 // Global navigator key for navigation from anywhere in the app
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+// Top-level function for background message handling
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  await FcmService.setupBackgroundMessageHandler(message);
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp();
+  
+  // Setup background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  
+  // Initialize FCM and get token
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await FcmService.initializeAndGetToken();
+    FcmService.setupForegroundMessageHandler();
+  });
+  
   runApp(
     const ProviderScope(
       child: MyApp(),

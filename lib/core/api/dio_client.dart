@@ -250,8 +250,19 @@ class DioClient {
         }
       }
 
-      // Merge options with requiresAuth flag
+      // Merge options with requiresAuth flag and headers
+      final defaultHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      
+      final mergedHeaders = {
+        ...defaultHeaders,
+        ...?options?.headers,
+      };
+      
       final mergedOptions = options?.copyWith(
+            headers: mergedHeaders,
             extra: {
               ...?options.extra,
               'requiresAuth': requiresAuth,
@@ -259,10 +270,7 @@ class DioClient {
           ) ??
           Options(
             contentType: 'application/json',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers: mergedHeaders,
             extra: {'requiresAuth': requiresAuth},
           );
 

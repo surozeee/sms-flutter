@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "305305934186",
+    "project_id": "loksandesh-b1bcf",
+    "storage_bucket": "loksandesh-b1bcf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305305934186:android:4035ce76826d4914a86d13",
+        "android_client_info": {
+          "package_name": "com.jojolapatech.loksandesh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbmM738D-d-6Y2EF36UEgq8rDmSUjK10w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
