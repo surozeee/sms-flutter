@@ -25,6 +25,7 @@ mixin _$ContentCreateRequest {
   String get textContent => throw _privateConstructorUsedError;
   String? get imageBase64 => throw _privateConstructorUsedError;
   String? get imageFilename => throw _privateConstructorUsedError;
+  String? get aiPrompt => throw _privateConstructorUsedError;
 
   /// Serializes this ContentCreateRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -47,7 +48,8 @@ abstract class $ContentCreateRequestCopyWith<$Res> {
       String title,
       String textContent,
       String? imageBase64,
-      String? imageFilename});
+      String? imageFilename,
+      String? aiPrompt});
 }
 
 /// @nodoc
@@ -71,6 +73,7 @@ class _$ContentCreateRequestCopyWithImpl<$Res,
     Object? textContent = null,
     Object? imageBase64 = freezed,
     Object? imageFilename = freezed,
+    Object? aiPrompt = freezed,
   }) {
     return _then(_value.copyWith(
       contentType: null == contentType
@@ -93,6 +96,10 @@ class _$ContentCreateRequestCopyWithImpl<$Res,
           ? _value.imageFilename
           : imageFilename // ignore: cast_nullable_to_non_nullable
               as String?,
+      aiPrompt: freezed == aiPrompt
+          ? _value.aiPrompt
+          : aiPrompt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -110,7 +117,8 @@ abstract class _$$ContentCreateRequestImplCopyWith<$Res>
       String title,
       String textContent,
       String? imageBase64,
-      String? imageFilename});
+      String? imageFilename,
+      String? aiPrompt});
 }
 
 /// @nodoc
@@ -131,6 +139,7 @@ class __$$ContentCreateRequestImplCopyWithImpl<$Res>
     Object? textContent = null,
     Object? imageBase64 = freezed,
     Object? imageFilename = freezed,
+    Object? aiPrompt = freezed,
   }) {
     return _then(_$ContentCreateRequestImpl(
       contentType: null == contentType
@@ -153,6 +162,10 @@ class __$$ContentCreateRequestImplCopyWithImpl<$Res>
           ? _value.imageFilename
           : imageFilename // ignore: cast_nullable_to_non_nullable
               as String?,
+      aiPrompt: freezed == aiPrompt
+          ? _value.aiPrompt
+          : aiPrompt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -165,7 +178,8 @@ class _$ContentCreateRequestImpl implements _ContentCreateRequest {
       required this.title,
       required this.textContent,
       this.imageBase64,
-      this.imageFilename});
+      this.imageFilename,
+      this.aiPrompt});
 
   factory _$ContentCreateRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$ContentCreateRequestImplFromJson(json);
@@ -180,10 +194,12 @@ class _$ContentCreateRequestImpl implements _ContentCreateRequest {
   final String? imageBase64;
   @override
   final String? imageFilename;
+  @override
+  final String? aiPrompt;
 
   @override
   String toString() {
-    return 'ContentCreateRequest(contentType: $contentType, title: $title, textContent: $textContent, imageBase64: $imageBase64, imageFilename: $imageFilename)';
+    return 'ContentCreateRequest(contentType: $contentType, title: $title, textContent: $textContent, imageBase64: $imageBase64, imageFilename: $imageFilename, aiPrompt: $aiPrompt)';
   }
 
   @override
@@ -199,13 +215,15 @@ class _$ContentCreateRequestImpl implements _ContentCreateRequest {
             (identical(other.imageBase64, imageBase64) ||
                 other.imageBase64 == imageBase64) &&
             (identical(other.imageFilename, imageFilename) ||
-                other.imageFilename == imageFilename));
+                other.imageFilename == imageFilename) &&
+            (identical(other.aiPrompt, aiPrompt) ||
+                other.aiPrompt == aiPrompt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, contentType, title, textContent, imageBase64, imageFilename);
+  int get hashCode => Object.hash(runtimeType, contentType, title, textContent,
+      imageBase64, imageFilename, aiPrompt);
 
   /// Create a copy of ContentCreateRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -231,7 +249,8 @@ abstract class _ContentCreateRequest implements ContentCreateRequest {
       required final String title,
       required final String textContent,
       final String? imageBase64,
-      final String? imageFilename}) = _$ContentCreateRequestImpl;
+      final String? imageFilename,
+      final String? aiPrompt}) = _$ContentCreateRequestImpl;
 
   factory _ContentCreateRequest.fromJson(Map<String, dynamic> json) =
       _$ContentCreateRequestImpl.fromJson;
@@ -246,6 +265,8 @@ abstract class _ContentCreateRequest implements ContentCreateRequest {
   String? get imageBase64;
   @override
   String? get imageFilename;
+  @override
+  String? get aiPrompt;
 
   /// Create a copy of ContentCreateRequest
   /// with the given fields replaced by the non-null parameter values.

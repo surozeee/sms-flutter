@@ -17,6 +17,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _textController = TextEditingController();
+  final _aiPromptController = TextEditingController();
   String _contentType = 'text';
   File? _selectedImage;
   String? _imageBase64;
@@ -27,6 +28,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
   void dispose() {
     _titleController.dispose();
     _textController.dispose();
+    _aiPromptController.dispose();
     super.dispose();
   }
 
@@ -57,6 +59,19 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
   }
 
   Future<void> _createContent() async {
+    // Additional validation for AI prompt
+    if (_contentType == 'ai' && (_aiPromptController.text.trim().isEmpty)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a prompt for AI'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -64,7 +79,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
 
       try {
         // Determine contentType for API (TEXT or IMAGE)
-        final apiContentType = _contentType == 'text' ? 'TEXT' : 'IMAGE';
+        final apiContentType = _contentType == 'text' ? 'TEXT' : (_contentType == 'image' ? 'IMAGE' : 'TEXT');
         
         // Create request based on content type
         final request = ContentCreateRequest(
@@ -73,6 +88,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
           textContent: _textController.text.trim(),
           imageBase64: _contentType == 'image' ? _imageBase64 : null,
           imageFilename: _contentType == 'image' ? _imageFilename : null,
+          aiPrompt: _contentType == 'ai' ? _aiPromptController.text.trim() : null,
         );
 
         // Call the API using the provider
@@ -139,6 +155,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
                 items: const [
                   DropdownMenuItem(value: 'text', child: Text('Text')),
                   DropdownMenuItem(value: 'image', child: Text('Image')),
+                  DropdownMenuItem(value: 'ai', child: Text('Create using AI')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -161,7 +178,7 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
                 },
               ),
               const SizedBox(height: 16),
-              if (_contentType == 'text' || _contentType == 'image')
+              if (_contentType == 'text' || _contentType == 'image' || _contentType == 'ai')
                 TextFormField(
                   controller: _textController,
                   decoration: const InputDecoration(
@@ -170,6 +187,24 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
                   ),
                   maxLines: 5,
                 ),
+              if (_contentType == 'ai') ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _aiPromptController,
+                  decoration: const InputDecoration(
+                    labelText: 'Prompt',
+                    hintText: 'Enter prompt here for AI',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 5,
+                  validator: (value) {
+                    if (_contentType == 'ai' && (value == null || value.isEmpty)) {
+                      return 'Please enter a prompt';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               if (_contentType == 'image') ...[
                 const SizedBox(height: 16),
                 if (_selectedImage != null)

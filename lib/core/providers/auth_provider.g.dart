@@ -180,7 +180,7 @@ final registerProvider =
 );
 
 typedef _$Register = AutoDisposeAsyncNotifier<RegisterResponse?>;
-String _$loginHash() => r'e9e1d0f00fdb65f3f3c689f46e864bec3adfa243';
+String _$loginHash() => r'e48cd286185aa78dcf108674bad0be8bc3c10f5a';
 
 /// See also [Login].
 @ProviderFor(Login)

@@ -20,7 +20,7 @@ class AdminSmsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
-  ContactSource _selectedSource = ContactSource.sim;
+  ContactSource? _selectedSource;
   List<ContactModel> _contacts = [];
   Map<String, List<ContactModel>> _groupedContacts = {};
   String? _selectedCarrierFilter;
@@ -54,7 +54,6 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSimContacts();
     // Scroll to text field when keyboard opens
     _messageFocusNode.addListener(() {
       if (_messageFocusNode.hasFocus) {
@@ -75,7 +74,6 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
   Future<void> _loadSimContacts() async {
     setState(() {
       _isLoading = true;
-      _selectedSource = ContactSource.sim;
       _loadedFileName = null;
     });
 
@@ -165,7 +163,6 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
 
       setState(() {
         _isLoading = true;
-        _selectedSource = ContactSource.csv;
         _loadedFileName = file.path.split('/').last;
       });
 
@@ -214,7 +211,6 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
 
       setState(() {
         _isLoading = true;
-        _selectedSource = ContactSource.excel;
         _loadedFileName = file.path.split('/').last;
       });
 
@@ -837,55 +833,102 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                // First row: SIM and CSV only
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSourceButton(
-                        'SIM Contacts',
-                        Icons.sim_card,
-                        ContactSource.sim,
-                        Colors.blue,
+                const SizedBox(height: 12),
+                DropdownButtonFormField<ContactSource>(
+                  value: _selectedSource,
+                  decoration: InputDecoration(
+                    hintText: 'Select contact source',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    prefixIcon: const Icon(Icons.source),
+                  ),
+                  items: [
+                    DropdownMenuItem<ContactSource>(
+                      value: ContactSource.sim,
+                      child: Row(
+                        children: [
+                          Icon(Icons.sim_card, color: Colors.blue, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('SIM Contacts'),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildSourceButton(
-                        'CSV File',
-                        Icons.description,
-                        ContactSource.csv,
-                        Colors.green,
+                    DropdownMenuItem<ContactSource>(
+                      value: ContactSource.csv,
+                      child: Row(
+                        children: [
+                          Icon(Icons.description,
+                              color: Colors.green, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('CSV File'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem<ContactSource>(
+                      value: ContactSource.excel,
+                      child: Row(
+                        children: [
+                          Icon(Icons.table_chart,
+                              color: Colors.orange, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('Excel File'),
+                        ],
                       ),
                     ),
                   ],
+                  onChanged: (ContactSource? value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedSource = value;
+                        _loadedFileName = null;
+                      });
+                      // Trigger import based on selected source
+                      if (value == ContactSource.sim) {
+                        _loadSimContacts();
+                      } else if (value == ContactSource.csv) {
+                        _loadCsvFile();
+                      } else if (value == ContactSource.excel) {
+                        _loadExcelFile();
+                      }
+                    }
+                  },
                 ),
-                const SizedBox(height: 8),
-                // Second row: Excel
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSourceButton(
-                        'Excel File',
-                        Icons.table_chart,
-                        ContactSource.excel,
-                        Colors.orange,
-                      ),
+                if (_loadedFileName != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
                     ),
-                  ],
-                ),
-                if (_loadedFileName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      'Loaded: $_loadedFileName',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle,
+                            size: 20, color: Colors.green.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Loaded: $_loadedFileName',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.green.shade900,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -893,7 +936,7 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
           // Carrier Filter
           if (_contacts.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
               color: Theme.of(context).colorScheme.surface,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -907,7 +950,7 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Wrap(
-                    spacing: 8,
+                    spacing: 16,
                     children: [
                       _buildCarrierChip('All', null),
                       ..._carriers.map(
@@ -931,6 +974,36 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
                 textAlign: TextAlign.center,
+              ),
+            ),
+
+          // Continue Button
+          if (_totalSelected > 0)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _showSmsBottomSheet,
+                icon: const Icon(Icons.message),
+                label: const Text(
+                  'Continue',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
 
@@ -1058,189 +1131,246 @@ class _AdminSmsScreenState extends ConsumerState<AdminSmsScreen> {
                         },
                       ),
           ),
-
-          // SMS Compose Section - Made responsive with Flexible
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'SMS Message',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _messageController,
-                      focusNode: _messageFocusNode,
-                      maxLines: 3,
-                      minLines: 1,
-                      decoration: InputDecoration(
-                        hintText: 'Type your message here...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                      onTap: () {
-                        // Scroll to bottom when text field is tapped
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          if (_scrollController.hasClients) {
-                            _scrollController.animateTo(
-                              _scrollController.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOut,
-                            );
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '${_messageController.text.length} characters',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // if (_statusMessage.isNotEmpty)
-                        //   Flexible(
-                        //     child: Padding(
-                        //       padding: const EdgeInsets.only(left: 8.0),
-                        //       child: Text(
-                        //         _statusMessage,
-                        //         style: TextStyle(
-                        //           color: _sentCount > 0
-                        //               ? Colors.green
-                        //               : Colors.red,
-                        //           fontSize: 12,
-                        //         ),
-                        //         textAlign: TextAlign.right,
-                        //         overflow: TextOverflow.ellipsis,
-                        //       ),
-                        //     ),
-                        //   ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: (_isSending || _isSendingViaServer)
-                                ? null
-                                : _sendSms,
-                            icon: _isSending
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.send),
-                            label: Text(_isSending ? 'Sending...' : 'Send SMS'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              textStyle: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: (_isSending || _isSendingViaServer)
-                                ? null
-                                : _sendSmsViaServer,
-                            icon: _isSendingViaServer
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.cloud_upload),
-                            label: Text(_isSendingViaServer
-                                ? 'Sending...'
-                                : 'Send via Server'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              textStyle: const TextStyle(fontSize: 16),
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildSourceButton(
-    String label,
-    IconData icon,
-    ContactSource source,
-    Color color,
-  ) {
-    final isSelected = _selectedSource == source;
-    return OutlinedButton.icon(
-      onPressed: () {
-        setState(() {
-          _selectedSource = source;
-        });
-        if (source == ContactSource.sim) {
-          _loadSimContacts();
-        } else if (source == ContactSource.csv) {
-          _loadCsvFile();
-        } else if (source == ContactSource.excel) {
-          _loadExcelFile();
-        }
-      },
-      icon: Icon(icon, size: 20),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: isSelected ? color.withOpacity(0.1) : null,
-        side: BorderSide(
-          color: isSelected ? color : Colors.grey,
-          width: isSelected ? 2 : 1,
+  int get _smsCount {
+    final length = _messageController.text.length;
+    if (length == 0) return 0;
+    if (length <= 160) return 1;
+    return ((length - 160) / 153).ceil() + 1;
+  }
+
+  void _showSmsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.55,
+        maxChildSize: 0.8,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Compose SMS',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Selected contacts info
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.people,
+                                color: Colors.blue.shade700, size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$_totalSelected Contact${_totalSelected == 1 ? '' : 's'} Selected',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Ready to send SMS',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Message input
+                      const Text(
+                        'SMS Message',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _messageController,
+                        focusNode: _messageFocusNode,
+                        maxLines: 6,
+                        minLines: 4,
+                        decoration: InputDecoration(
+                          hintText: 'Type your message here...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                          contentPadding: const EdgeInsets.all(16),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {});
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      // Clear message button
+                      if (_messageController.text.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            tooltip: 'Clear message',
+                            onPressed: () {
+                              setState(() {
+                                _messageController.clear();
+                              });
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 20),
+                      // Send buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: (_isSending ||
+                                      _isSendingViaServer ||
+                                      _totalSelected == 0)
+                                  ? null
+                                  : () {
+                                      Navigator.pop(context);
+                                      _sendSms();
+                                    },
+                              icon: _isSending
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.send),
+                              label:
+                                  Text(_isSending ? 'Sending...' : 'Send SMS'),
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                textStyle: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: (_isSending ||
+                                      _isSendingViaServer ||
+                                      _totalSelected == 0)
+                                  ? null
+                                  : () {
+                                      Navigator.pop(context);
+                                      _sendSmsViaServer();
+                                    },
+                              icon: _isSendingViaServer
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.cloud_upload),
+                              label: Text(_isSendingViaServer
+                                  ? 'Sending...'
+                                  : 'Via Server'),
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                textStyle: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

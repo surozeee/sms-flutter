@@ -11,6 +11,7 @@ class ContentCreateRequest with _$ContentCreateRequest {
     required String textContent,
     String? imageBase64,
     String? imageFilename,
+    String? aiPrompt,
   }) = _ContentCreateRequest;
 
   factory ContentCreateRequest.fromJson(Map<String, dynamic> json) =>

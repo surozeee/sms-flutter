@@ -4,10 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:social_sharing_plus/social_sharing_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:social_sharing_plus/social_sharing_plus.dart';
 
 import '../../core/models/contents_list_response.dart';
 import '../../core/providers/auth_provider.dart';
@@ -41,7 +41,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
 
   Future<void> _loadContents() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -210,10 +210,11 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
           final response = await http.get(Uri.parse(imageUrl));
           if (response.statusCode == 200) {
             final directory = await getTemporaryDirectory();
-            final path = '${directory.path}/temp_share_${DateTime.now().millisecondsSinceEpoch}.png';
+            final path =
+                '${directory.path}/temp_share_${DateTime.now().millisecondsSinceEpoch}.png';
             final file = File(path);
             await file.writeAsBytes(response.bodyBytes);
-            
+
             if (await file.exists()) {
               await Share.shareXFiles(
                 [XFile(path)],
@@ -227,7 +228,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
           // Fall through to text-only share
         }
       }
-      
+
       // Share text only if image download failed or no image
       await Share.share(shareText);
     } catch (e) {
@@ -299,7 +300,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
             Consumer(
               builder: (context, ref, child) {
                 final profileAsync = ref.watch(userProfileProviderProvider);
-                
+
                 return DrawerHeader(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
@@ -317,15 +318,17 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                       profileAsync.when(
                         data: (profile) {
                           // Get display name with fallback: fullName -> emailAddress -> mobileNumber -> 'Member'
-                          final displayName = profile?.fullName?.isNotEmpty == true
+                          final displayName = profile?.fullName?.isNotEmpty ==
+                                  true
                               ? profile!.fullName!
                               : (profile?.emailAddress?.isNotEmpty == true
                                   ? profile!.emailAddress!
                                   : (profile?.mobileNumber?.isNotEmpty == true
                                       ? profile!.mobileNumber!
                                       : 'Member'));
-                          final roleName = (profile?.roleName ?? 'MEMBER').replaceAll('_', ' ');
-                          
+                          final roleName = (profile?.roleName ?? 'MEMBER')
+                              .replaceAll('_', ' ');
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -374,7 +377,8 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
             Consumer(
               builder: (context, ref, child) {
                 final balanceAsync = ref.watch(userBalanceProvider);
-                final profileNotifier = ref.read(userProfileProviderProvider.notifier);
+                final profileNotifier =
+                    ref.read(userProfileProviderProvider.notifier);
 
                 Future<void> refreshBalance() async {
                   try {
@@ -386,7 +390,7 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                     // Error handling is done by the provider
                   }
                 }
-                
+
                 return Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -412,7 +416,9 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
                                 ),
                               ),
                             ],

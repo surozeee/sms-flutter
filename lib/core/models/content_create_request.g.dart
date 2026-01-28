@@ -14,6 +14,7 @@ _$ContentCreateRequestImpl _$$ContentCreateRequestImplFromJson(
       textContent: json['textContent'] as String,
       imageBase64: json['imageBase64'] as String?,
       imageFilename: json['imageFilename'] as String?,
+      aiPrompt: json['aiPrompt'] as String?,
     );
 
 Map<String, dynamic> _$$ContentCreateRequestImplToJson(
@@ -24,4 +25,5 @@ Map<String, dynamic> _$$ContentCreateRequestImplToJson(
       'textContent': instance.textContent,
       'imageBase64': instance.imageBase64,
       'imageFilename': instance.imageFilename,
+      'aiPrompt': instance.aiPrompt,
     };
