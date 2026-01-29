@@ -30,6 +30,7 @@ class ApiEndpoints {
   static const String membersList = '/mobile/members/list';
   static const String memberRegister = '/mobile/members/register';
   static const String bulkRegister = '/mobile/members/bulk-register-csv';
+  static const String bulkRegisterJson = '/mobile/members/bulk-register-json';
   static const String mobileBulkSendSms = '/mobile/sms/bulk-send';
   static const String pushNotificationsList = '/mobile/push-notifications/list';
   static const String packagesList = '/mobile/packages/list';
@@ -61,6 +62,10 @@ class ApiEndpoints {
   static const String uploadContent = '/content/upload';
   static const String contentCreate = '/mobile/content/create';
   static const String contentsList = '/mobile/contents/list';
+
+  // Gemini / AI endpoints
+  static const String geminiGenerateText = '/mobile/gemini/generate-text';
+  static const String geminiGenerateImage = '/mobile/gemini/generate-image';
 
   // Admin endpoints
   static const String adminUsers = '/admin/users';

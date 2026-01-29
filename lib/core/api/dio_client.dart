@@ -255,12 +255,12 @@ class DioClient {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
-      
+
       final mergedHeaders = {
         ...defaultHeaders,
         ...?options?.headers,
       };
-      
+
       final mergedOptions = options?.copyWith(
             headers: mergedHeaders,
             extra: {

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/auth_provider.dart';
 import '../auth/role_selection_screen.dart';
 import 'admin_sms_screen.dart';
-import 'content_management_screen.dart';
+import 'ai_content_creator_screen.dart';
 import 'member_management_screen.dart';
 import 'push_history_screen.dart';
 import '../../screens/packages/package_list_screen.dart';
@@ -154,7 +154,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             Consumer(
               builder: (context, ref, child) {
                 final balanceAsync = ref.watch(userBalanceProvider);
-                final profileNotifier = ref.read(userProfileProviderProvider.notifier);
+                final profileNotifier =
+                    ref.read(userProfileProviderProvider.notifier);
 
                 Future<void> refreshBalance() async {
                   try {
@@ -283,15 +284,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.create),
-              title: const Text('Create Content'),
-              selected: _selectedIndex == 2,
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('AI based Content Creator'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ContentManagementScreen(),
+                    builder: (context) => const AiContentCreatorScreen(),
                   ),
                 );
               },
@@ -449,14 +449,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 },
               ),
               _buildActionCard(
-                'Create Content',
-                Icons.create,
+                'AI based Content Creator',
+                Icons.auto_awesome,
                 Colors.green,
                 () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ContentManagementScreen(),
+                      builder: (context) => const AiContentCreatorScreen(),
                     ),
                   );
                 },
