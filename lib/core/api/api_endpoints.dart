@@ -62,6 +62,7 @@ class ApiEndpoints {
   static const String uploadContent = '/content/upload';
   static const String contentCreate = '/mobile/content/create';
   static const String contentsList = '/mobile/contents/list';
+  static const String myContent = '/mobile/content/my-content';
 
   // Gemini / AI endpoints
   static const String geminiGenerateText = '/mobile/gemini/generate-text';

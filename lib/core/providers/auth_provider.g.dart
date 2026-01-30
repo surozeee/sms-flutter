@@ -355,6 +355,24 @@ final pushNotificationsListProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$PushNotificationsList
     = AutoDisposeAsyncNotifier<PushNotificationsListResponse?>;
+String _$myContentListHash() => r'e5a2ceff3ca983cc559d6bf9a5cd9068b6dbc258';
+
+/// Provider for fetching my content list (push history / my content)
+///
+/// Copied from [MyContentList].
+@ProviderFor(MyContentList)
+final myContentListProvider = AutoDisposeAsyncNotifierProvider<MyContentList,
+    ContentsListResponse?>.internal(
+  MyContentList.new,
+  name: r'myContentListProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$myContentListHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$MyContentList = AutoDisposeAsyncNotifier<ContentsListResponse?>;
 String _$packagesListHash() => r'81a7a7ef6df5f2c1ed2d0270b19e78fc69db0736';
 
 /// Provider for fetching packages list

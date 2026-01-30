@@ -12,6 +12,7 @@ import 'package:social_sharing_plus/social_sharing_plus.dart';
 import '../../core/models/contents_list_response.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../services/share_service.dart';
+import '../../widgets/content_card.dart';
 import '../auth/role_selection_screen.dart';
 import '../packages/package_list_screen.dart';
 import 'member_contacts_screen.dart';
@@ -562,92 +563,26 @@ class _MemberDashboardScreenState extends ConsumerState<MemberDashboardScreen> {
   }
 
   Widget _buildContentCard(ContentItem content) {
-    // Build image URL - if it's a relative path, prepend base URL
-    String? imageUrl = content.imageUrl;
-    if (imageUrl != null && !imageUrl.startsWith('http')) {
-      imageUrl = 'https://loksandesh.jojolapatech.com/$imageUrl';
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return ContentCardWidget(
+      content: content,
+      trailing: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
         children: [
-          if (imageUrl != null)
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 200,
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, size: 64),
-                  );
-                },
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  content.title ?? 'Untitled',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (content.textContent != null &&
-                    content.textContent!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    content.textContent!,
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-                if (content.partyName != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Party: ${content.partyName}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _buildShareButton('Facebook', FontAwesomeIcons.facebook,
-                        const Color(0xFF1877F2), content),
-                    _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp,
-                        const Color(0xFF25D366), content),
-                    _buildShareButton('Viber', FontAwesomeIcons.viber,
-                        const Color(0xFF665CAC), content),
-                    _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin,
-                        const Color(0xFF0077B5), content),
-                    _buildShareButton('Twitter', FontAwesomeIcons.xTwitter,
-                        const Color(0xFF1DA1F2), content),
-                    _buildShareButton('Instagram', FontAwesomeIcons.instagram,
-                        const Color(0xFFE4405F), content),
-                    _buildGeneralShareButton(content),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildShareButton('Facebook', FontAwesomeIcons.facebook,
+              const Color(0xFF1877F2), content),
+          _buildShareButton('WhatsApp', FontAwesomeIcons.whatsapp,
+              const Color(0xFF25D366), content),
+          _buildShareButton('Viber', FontAwesomeIcons.viber,
+              const Color(0xFF665CAC), content),
+          _buildShareButton('LinkedIn', FontAwesomeIcons.linkedin,
+              const Color(0xFF0077B5), content),
+          _buildShareButton('Twitter', FontAwesomeIcons.xTwitter,
+              const Color(0xFF1DA1F2), content),
+          _buildShareButton('Instagram', FontAwesomeIcons.instagram,
+              const Color(0xFFE4405F), content),
+          _buildGeneralShareButton(content),
         ],
       ),
     );

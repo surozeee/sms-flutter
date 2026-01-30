@@ -1053,6 +1053,73 @@ class PushNotificationsList extends _$PushNotificationsList {
   }
 }
 
+/// Provider for fetching my content list (push history / my content)
+@riverpod
+class MyContentList extends _$MyContentList {
+  @override
+  Future<ContentsListResponse?> build() async {
+    return null;
+  }
+
+  Future<ContentsListResponse> fetchMyContent({
+    int page = 0,
+    int size = 50,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final dioClient = await ref.read(dioClientProvider.future);
+
+      final request = ContentsListRequest(page: page, size: size);
+
+      final response = await dioClient.postJson(
+        ApiEndpoints.myContent,
+        data: request.toJson(),
+        requiresAuth: true,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final contentsResponse = ContentsListResponse.fromJson(
+          response.data is Map<String, dynamic>
+              ? response.data
+              : {'data': response.data},
+        );
+
+        if (contentsResponse.status == 'SUCCESS') {
+          state = AsyncValue.data(contentsResponse);
+          return contentsResponse;
+        } else {
+          final errorMessage =
+              contentsResponse.message ?? 'Failed to fetch my content';
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            message: errorMessage,
+          );
+        }
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message:
+              'Failed to fetch my content with status: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      final errorMessage = e.message ??
+          _extractErrorMessage(e.response?.data) ??
+          'Failed to fetch my content';
+      state = AsyncValue.error(errorMessage, StackTrace.current);
+      rethrow;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
+}
+
 /// Provider for fetching packages list
 @riverpod
 class PackagesList extends _$PackagesList {
